@@ -39,12 +39,12 @@ jobs:
 
       # Step 3 — Install React Dependencies
       - name: Install frontend dependencies
-        working-directory: ./frontend
+        working-directory: frontend
         run: npm install
 
       # Step 4 — Run React Build
       - name: Build frontend
-        working-directory: ./frontend
+        working-directory: frontend
         run: npm run build
 
       # Step 5 — Setup .NET SDK for Backend
@@ -55,17 +55,17 @@ jobs:
 
       # Step 6 — Restore NuGet Packages
       - name: Restore .NET dependencies
-        working-directory: ./backend
+        working-directory: backend
         run: dotnet restore
 
       # Step 7 — Build Backend
       - name: Build backend
-        working-directory: ./backend
+        working-directory: backend
         run: dotnet build --configuration Release --no-restore
 
       # Step 8 — Run Unit Tests (Optional, if you have tests)
       - name: Run tests
-        working-directory: ./backend
+        working-directory: backend
         run: dotnet test --no-build --verbosity normal
 
   deploy:
@@ -89,5 +89,5 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: HospitalManagementSystem
-          package: ./backend/bin/Release/net8.0/publish
+          package: backend/bin/Release/net8.0/publish
 
