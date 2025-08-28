@@ -1,0 +1,54 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1 - Checkout Code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2 - Set up Node.js for React frontend
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Step 3 - Install React dependencies
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm install
+
+      # Step 4 - Build React app
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      # Step 5 - Set up .NET for backend
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0.x'
+
+      # Step 6 - Restore backend dependencies
+      - name: Restore backend dependencies
+        run: |
+          cd backend
+          dotnet restore
+
+      # Step 7 - Build backend
+      - name: Build backend
+        run: |
+          cd backend
+          dotnet build --no-restore
