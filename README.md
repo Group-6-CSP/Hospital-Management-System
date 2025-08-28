@@ -96,16 +96,20 @@ Hospital-Management-System/
 ```bash
     npm start
 ```
-s
+
 - Backend: Start the ASP.NET MVC project from Visual Studio
+
+---
 
 ## **Usage**
 
-Admins can manage patients, doctors, appointments, and billing
+- Admins can manage patients, doctors, appointments, and billing
 
-Doctors can view schedules and appointments
+- Doctors can view schedules and appointments
 
-Patients can register and book appointments online
+- Patients can register and book appointments online
+
+---
 
 ## **Contribution**
 
@@ -130,6 +134,8 @@ git push origin feature/<module>
 ```
 
 5. Create a Pull Request into develop
+
+---
 
 ## **License**
 
