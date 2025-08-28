@@ -31,42 +31,44 @@ It provides role-based access for admins, doctors, and patients with dynamic rep
 ---
 
 ## **Folder Structure**
+
+```
 Hospital-Management-System/
-│── frontend/ # React.js frontend
-│ ├── src/
-│ │ ├── components/
-│ │ ├── pages/
-│ │ ├── services/
-│ │ └── styles/
+│── frontend/                  # React.js frontend
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── styles/
 │
-│── backend/ # ASP.NET MVC backend
-│ ├── Controllers/
-│ ├── Models/
-│ ├── Views/
-│ ├── Services/
-│ ├── Repositories/
-│ └── Tests/
+│── backend/                   # ASP.NET MVC backend
+│   ├── Controllers/
+│   ├── Models/
+│   ├── Views/
+│   ├── Services/
+│   ├── Repositories/
+│   └── Tests/
 │
 │── database/
-│ ├── schema.sql
-│ └── seed_data.sql
+│   ├── schema.sql
+│   └── seed_data.sql
 │
 │── reports/
-│ ├── dynamic_reports/
-│ └── performance_tests/
+│   ├── dynamic_reports/
+│   └── performance_tests/
 │
 │── deployment/
-│ ├── Dockerfile
-│ ├── docker-compose.yml
-│ └── azure-pipeline.yml
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── azure-pipeline.yml
 │
 │── docs/
-│ ├── SRS.pdf
-│ ├── Architecture.png
-│ └── API_Documentation.pdf
+│   ├── SRS.pdf
+│   ├── Architecture.png
+│   └── API_Documentation.pdf
 │
 └── README.md
-
+```
 ---
 
 ## **Setup Instructions**
@@ -94,8 +96,8 @@ Hospital-Management-System/
 ```bash
     npm start
 ```
-
-    - Backend: Start the ASP.NET MVC project from Visual Studio
+s
+- Backend: Start the ASP.NET MVC project from Visual Studio
 
 ## **Usage**
 
