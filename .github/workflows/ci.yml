@@ -1,0 +1,67 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/*"
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project: [frontend, backend]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # ---------- FRONTEND ----------
+      - name: Setup Node.js
+        if: matrix.project == 'frontend'
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'   
+
+      - name: Install & build (frontend)
+        if: matrix.project == 'frontend'
+        run: |
+          cd frontend
+          npm ci || npm install
+          npm run build
+          npm test --if-present -- --watchAll=false
+
+      # ---------- BACKEND ----------
+      - name: Setup .NET SDK
+        if: matrix.project == 'backend'
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'   
+
+      - name: Restore (backend)
+        if: matrix.project == 'backend'
+        run: |
+          cd backend
+          dotnet restore
+
+      - name: Build (backend)
+        if: matrix.project == 'backend'
+        run: |
+          cd backend
+          dotnet build --no-restore -c Release
+
+      - name: Test (backend)
+        if: matrix.project == 'backend'
+        env:
+          ASPNETCORE_ENVIRONMENT: CI
+          ConnectionStrings__DefaultConnection: "Server=localhost;Database=ci;Uid=root;Pwd=;"
+        run: |
+          cd backend
+          dotnet test --no-build -c Release
