@@ -25,13 +25,13 @@ jobs:
 
       # ---------- FRONTEND ----------
       - name: Setup Node.js
-        if: matrix.project == 'frontend'
+        if: matrix.project == 'frontend' && hashFiles('frontend/package.json') != ''
         uses: actions/setup-node@v3
         with:
-          node-version: '20.x'   
+          node-version: '20.x'  
 
       - name: Install & build (frontend)
-        if: matrix.project == 'frontend'
+        if: matrix.project == 'frontend' && hashFiles('frontend/package.json') != ''
         run: |
           cd frontend
           npm ci || npm install
