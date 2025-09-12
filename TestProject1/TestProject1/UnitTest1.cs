@@ -9,8 +9,9 @@ using backend.DTOs;
 using backend.Models;
 using backend.Services;
 using MySql.Data.MySqlClient;
+using Backend.Tests;
 
-namespace Backend.Tests
+namespace Backend.TestsProject1
 {
     [TestFixture]
     public class AuthControllerTests
@@ -109,7 +110,7 @@ namespace Backend.Tests
             {
                 var result = _authController.Register(request);
 
-                // If we get a BadRequest result for future DOB, that's correct
+                // If have aadrequest result for future DOB,
                 if (result is BadRequestObjectResult badRequest)
                 {
                     dynamic response = badRequest.Value;
@@ -119,14 +120,13 @@ namespace Backend.Tests
             }
             catch (Exception ex)
             {
-                //Database connection issues
+                //for database connection issues
                 Assert.IsTrue(ex is MySqlException || ex is ArgumentException);
             }
         }
 
         [Test]
         public void Register_WithValidRequest_CalculatesAgeCorrectly()
-        {   // Test the age calculation logic separately
 
             // Arrange
             DateTime dob = new DateTime(1990, 3, 15);
@@ -200,7 +200,7 @@ namespace Backend.Tests
         [Test]
         public void Login_WithNullRequest_ThrowsNullReferenceException()
         {
-            // Act and  Assert
+            // Act and  assert
             Assert.Throws<NullReferenceException>(() => _authController.Login(null));
         }
 
@@ -214,7 +214,7 @@ namespace Backend.Tests
                 Password = "password123"
             };
 
-            // Act and  Assert
+            // Act and  assert
             try
             {
                 var result = _authController.Login(request);
@@ -241,7 +241,7 @@ namespace Backend.Tests
                 Password = "password123"
             };
 
-            // Act and Assert
+            // Act and assert
             try
             {
                 var result = _authController.Login(request);
@@ -263,7 +263,7 @@ namespace Backend.Tests
                 Password = ""
             };
 
-            // Act nad  Assert
+            // Act nad  assert
             try
             {
                 var result = _authController.Login(request);
@@ -343,7 +343,6 @@ namespace Backend.Tests
             string currentYear = DateTime.Now.Year.ToString();
             string expectedPattern = $"U-{currentYear}-";
 
-            // Act - Simulate the UserId generation logic
             string userId = $"U-{DateTime.Now.Year}-{Guid.NewGuid().ToString().Substring(0, 4)}";
 
             // Assert
@@ -387,7 +386,7 @@ namespace Backend.Tests
             // sssert
             Assert.IsNotNull(hashedPassword);
             Assert.AreNotEqual(password, hashedPassword);
-            Assert.IsTrue(hashedPassword.Length > 20); // BCrypt hashes are typically 60 chars
+            Assert.IsTrue(hashedPassword.Length > 20); // BCrypt hashes are typically have 60 chars
         }
 
         [Test]
@@ -446,7 +445,7 @@ namespace Backend.Tests
         [Test]
         public void GenerateJwtToken_WithNullUser_ThrowsException()
         {
-            // Act & Assert
+            // Act and assert
             Assert.Throws<NullReferenceException>(() => _authService.GenerateJwtToken(null));
         }
 
