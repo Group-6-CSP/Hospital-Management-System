@@ -1,9 +1,29 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddControllers();
 
-// Configure Kestrel to listen on both HTTP and HTTPS
+// Enable Swagger (optional, but useful for testing)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:3000") // frontend URL
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
+// Configure Kestrel ports (5239 for HTTP, 7018 for HTTPS)
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenAnyIP(5239); // HTTP
@@ -15,12 +35,22 @@ builder.WebHost.ConfigureKestrel(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// Configure middleware
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
 app.UseHttpsRedirection();
+
+app.UseRouting();
+
+// Enable CORS
+app.UseCors("AllowFrontend");
 
 app.UseAuthorization();
 
-// This makes ASP.NET scan all [ApiController] classes
 app.MapControllers();
 
 app.Run();

@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using HospitalManagementSystem.Models;
 using Microsoft.Extensions.Configuration;
-using System.Threading.Tasks;
 
 namespace HospitalManagementSystem.Controllers
 {
@@ -17,7 +17,97 @@ namespace HospitalManagementSystem.Controllers
         public PatientsController(IConfiguration config)
         {
             _config = config;
-            _connectionString = _config.GetConnectionString("DefaultConnection");
+            // Ensure we never have a null connection string
+            _connectionString = _config.GetConnectionString("DefaultConnection") ?? "";
+        }
+
+        // Utility: Safe string from reader (always returns string, never null)
+        private string SafeGetString(MySqlDataReader reader, string columnName)
+        {
+            return reader[columnName] == DBNull.Value ? "" : reader[columnName].ToString()!;
+        }
+
+        private DateTime SafeGetDateTime(MySqlDataReader reader, string columnName)
+        {
+            return reader[columnName] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader[columnName]);
+        }
+
+        // GET /api/patients
+        [HttpGet]
+        public IActionResult GetAllPatients()
+        {
+            try
+            {
+                using var connection = new MySqlConnection(_connectionString);
+                connection.Open();
+
+                var cmd = new MySqlCommand("SELECT * FROM Patients", connection);
+                var reader = cmd.ExecuteReader();
+
+                var patients = new List<Patient>();
+
+                while (reader.Read())
+                {
+                    patients.Add(new Patient
+                    {
+                        PatientId = SafeGetString(reader, "PatientId"),
+                        UserId = SafeGetString(reader, "UserId"),
+                        Name = SafeGetString(reader, "Name"),
+                        Email = SafeGetString(reader, "Email"),
+                        Dob = SafeGetDateTime(reader, "Dob"),
+                        Gender = SafeGetString(reader, "Gender"),
+                        Contact = SafeGetString(reader, "Contact"),
+                        MedicalNotes = SafeGetString(reader, "MedicalNotes"),
+                        Age = SafeGetString(reader, "Age")
+                    });
+                }
+
+                return Ok(patients);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // GET /api/patients/{id}
+        [HttpGet("{id}")]
+        public IActionResult GetPatientById(string id)
+        {
+            try
+            {
+                using var connection = new MySqlConnection(_connectionString);
+                connection.Open();
+
+                var cmd = new MySqlCommand("SELECT * FROM Patients WHERE PatientId=@PatientId", connection);
+                cmd.Parameters.AddWithValue("@PatientId", id);
+                var reader = cmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    var patient = new Patient
+                    {
+                        PatientId = SafeGetString(reader, "PatientId"),
+                        UserId = SafeGetString(reader, "UserId"),
+                        Name = SafeGetString(reader, "Name"),
+                        Email = SafeGetString(reader, "Email"),
+                        Dob = SafeGetDateTime(reader, "Dob"),
+                        Gender = SafeGetString(reader, "Gender"),
+                        Contact = SafeGetString(reader, "Contact"),
+                        MedicalNotes = SafeGetString(reader, "MedicalNotes"),
+                        Age = SafeGetString(reader, "Age")
+                    };
+                    return Ok(patient);
+                }
+                else
+                {
+                    return NotFound(new { error = "Patient not found" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // POST /api/patients
@@ -29,7 +119,6 @@ namespace HospitalManagementSystem.Controllers
                 if (request == null)
                     return BadRequest(new { error = "Invalid request" });
 
-                // Validate mandatory fields
                 if (string.IsNullOrWhiteSpace(request.Name) ||
                     request.Dob == default ||
                     string.IsNullOrWhiteSpace(request.Gender) ||
@@ -45,37 +134,31 @@ namespace HospitalManagementSystem.Controllers
                 if (request.Contact.Length < 10)
                     return BadRequest(new { error = "Invalid contact number" });
 
-                // Calculate Age
                 string age = CalculateAge(request.Dob);
-
-                // Generate PatientId
                 string patientId = GeneratePatientId();
 
                 using var connection = new MySqlConnection(_connectionString);
                 connection.Open();
 
-                // Check duplicate contact
                 var checkCmd = new MySqlCommand("SELECT COUNT(*) FROM Patients WHERE Contact=@Contact", connection);
                 checkCmd.Parameters.AddWithValue("@Contact", request.Contact);
                 long count = Convert.ToInt64(checkCmd.ExecuteScalar());
 
                 if (count > 0)
-                {
                     return Conflict(new { error = "Contact already exists", code = 409 });
-                }
 
-                // Insert into Patients table
                 var insertCmd = new MySqlCommand(
-                    "INSERT INTO Patients (PatientId, UserId, Name, Dob, Gender, Contact, Age) " +
-                    "VALUES (@PatientId, @UserId, @Name, @Dob, @Gender, @Contact, @Age)",
-                    connection);
+                    "INSERT INTO Patients (PatientId, UserId, Name, Email, Dob, Gender, Contact, MedicalNotes, Age) " +
+                    "VALUES (@PatientId, @UserId, @Name, @Email, @Dob, @Gender, @Contact, @MedicalNotes, @Age)", connection);
 
                 insertCmd.Parameters.AddWithValue("@PatientId", patientId);
                 insertCmd.Parameters.AddWithValue("@UserId", request.UserId);
                 insertCmd.Parameters.AddWithValue("@Name", request.Name);
+                insertCmd.Parameters.AddWithValue("@Email", request.Email ?? "");
                 insertCmd.Parameters.AddWithValue("@Dob", request.Dob);
                 insertCmd.Parameters.AddWithValue("@Gender", request.Gender);
                 insertCmd.Parameters.AddWithValue("@Contact", request.Contact);
+                insertCmd.Parameters.AddWithValue("@MedicalNotes", request.MedicalNotes ?? "");
                 insertCmd.Parameters.AddWithValue("@Age", age);
 
                 insertCmd.ExecuteNonQuery();
@@ -83,9 +166,114 @@ namespace HospitalManagementSystem.Controllers
                 return Ok(new
                 {
                     patientId,
-                    age,
                     message = "Patient registered successfully"
                 });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // PUT /api/patients/{id}
+        [HttpPut("{id}")]
+        public IActionResult UpdatePatient(string id, [FromBody] Patient request)
+        {
+            try
+            {
+                if (request == null)
+                    return BadRequest(new { error = "Invalid request" });
+
+                using var connection = new MySqlConnection(_connectionString);
+                connection.Open();
+
+                var getCmd = new MySqlCommand("SELECT * FROM Patients WHERE PatientId=@PatientId", connection);
+                getCmd.Parameters.AddWithValue("@PatientId", id);
+                var reader = getCmd.ExecuteReader();
+
+                if (!reader.Read())
+                    return NotFound(new { error = "Patient not found" });
+
+                string currentUserId = SafeGetString(reader, "UserId");
+                string currentContact = SafeGetString(reader, "Contact");
+                DateTime currentDob = SafeGetDateTime(reader, "Dob");
+                string currentAge = SafeGetString(reader, "Age");
+
+                reader.Close();
+
+                if (!string.IsNullOrWhiteSpace(request.UserId) && request.UserId != currentUserId)
+                {
+                    return BadRequest(new { error = "UserId cannot be changed." });
+                }
+
+                if (request.Contact != currentContact)
+                {
+                    var checkContactCmd = new MySqlCommand(
+                        "SELECT COUNT(*) FROM Patients WHERE Contact=@Contact AND PatientId<>@PatientId", connection);
+                    checkContactCmd.Parameters.AddWithValue("@Contact", request.Contact);
+                    checkContactCmd.Parameters.AddWithValue("@PatientId", id);
+                    long contactCount = Convert.ToInt64(checkContactCmd.ExecuteScalar());
+
+                    if (contactCount > 0)
+                        return Conflict(new { error = "Contact already exists", code = 409 });
+                }
+
+                string updatedAge = (request.Dob != currentDob)
+                    ? CalculateAge(request.Dob)
+                    : currentAge;
+
+                var updateCmd = new MySqlCommand(
+                    "UPDATE Patients SET Name=@Name, Email=@Email, Dob=@Dob, Gender=@Gender, " +
+                    "Contact=@Contact, MedicalNotes=@MedicalNotes, Age=@Age WHERE PatientId=@PatientId",
+                    connection);
+
+                updateCmd.Parameters.AddWithValue("@Name", request.Name);
+                updateCmd.Parameters.AddWithValue("@Email", request.Email ?? "");
+                updateCmd.Parameters.AddWithValue("@Dob", request.Dob);
+                updateCmd.Parameters.AddWithValue("@Gender", request.Gender);
+                updateCmd.Parameters.AddWithValue("@Contact", request.Contact);
+                updateCmd.Parameters.AddWithValue("@MedicalNotes", request.MedicalNotes ?? "");
+                updateCmd.Parameters.AddWithValue("@Age", updatedAge);
+                updateCmd.Parameters.AddWithValue("@PatientId", id);
+
+                int rowsAffected = updateCmd.ExecuteNonQuery();
+
+                if (rowsAffected > 0)
+                    return Ok(new { message = "Patient updated successfully" });
+
+                return StatusCode(500, new { error = "Update failed" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // DELETE /api/patients/{id}
+        [HttpDelete("{id}")]
+        public IActionResult DeletePatient(string id)
+        {
+            try
+            {
+                using var connection = new MySqlConnection(_connectionString);
+                connection.Open();
+
+                var checkCmd = new MySqlCommand("SELECT COUNT(*) FROM Patients WHERE PatientId=@PatientId", connection);
+                checkCmd.Parameters.AddWithValue("@PatientId", id);
+                long count = Convert.ToInt64(checkCmd.ExecuteScalar());
+
+                if (count == 0)
+                    return NotFound(new { error = "Patient not found" });
+
+                var deleteCmd = new MySqlCommand("DELETE FROM Patients WHERE PatientId=@PatientId", connection);
+                deleteCmd.Parameters.AddWithValue("@PatientId", id);
+
+                int rowsAffected = deleteCmd.ExecuteNonQuery();
+
+                if (rowsAffected > 0)
+                    return Ok(new { message = "Patient deleted successfully" });
+
+                return StatusCode(500, new { error = "Delete failed" });
             }
             catch (Exception ex)
             {
@@ -136,13 +324,13 @@ namespace HospitalManagementSystem.Controllers
 
             if (result != null)
             {
-                string lastId = result.ToString(); // e.g., P-00000005
+                string lastId = result.ToString()!;
                 int num = int.Parse(lastId.Substring(2));
                 return "P-" + (num + 1).ToString("D8");
             }
             else
             {
-                return "P-00000001"; // first patient
+                return "P-00000001";
             }
         }
     }
