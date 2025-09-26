@@ -1,4 +1,4 @@
-name: Backend CI (dotnet 8)
+name: Backend CI (dotnet 8) — explicit paths
 
 on:
   push:
@@ -6,28 +6,55 @@ on:
   pull_request:
     branches: [ main, deployment ]
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
-    name: Build & Test (backend)
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository (full)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show files (diagnostic)
+        run: |
+          echo "=== repo root ==="
+          ls -la
+          echo "=== backend folder ==="
+          ls -la backend || true
+          echo "=== find csproj/sln files ==="
+          find . -maxdepth 4 -type f \( -name '*.csproj' -o -name '*.sln' \) -print || true
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore (backend)
-        working-directory: backend
-        run: dotnet restore
+      - name: Restore (prefer root solution, fallback to backend csproj)
+        run: |
+          if [ -f "./backend.sln" ]; then
+            echo "Using backend.sln at repo root"
+            dotnet restore ./backend.sln
+          elif [ -f "./backend/backend.csproj" ]; then
+            echo "Using backend/backend.csproj"
+            dotnet restore ./backend/backend.csproj
+          else
+            echo "ERROR: No backend.sln or backend/backend.csproj found. See listing above."
+            exit 2
+          fi
 
-      - name: Build (backend)
-        working-directory: backend
-        run: dotnet build --configuration Release --no-restore
+      - name: Build (use solution if available)
+        run: |
+          if [ -f "./backend.sln" ]; then
+            dotnet build ./backend.sln --configuration Release --no-restore
+          else
+            dotnet build ./backend/backend.csproj --configuration Release --no-restore
+          fi
 
-      - name: Run tests (backend)
-        working-directory: backend
-        run: dotnet test --no-build --verbosity normal
+      - name: Test (run all tests under backend)
+        run: |
+          # run tests by pointing to the backend folder; dotnet will discover test projects
+          dotnet test ./backend --no-build --verbosity normal
