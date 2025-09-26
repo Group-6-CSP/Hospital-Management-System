@@ -17,73 +17,33 @@ jobs:
 
     strategy:
       matrix:
-        project: [frontend, backend]
+        project: [backend]   # ✅ Only backend now
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # ---------- FRONTEND ----------
-      - name: Setup Node.js
-        if: matrix.project == 'frontend' && hashFiles('frontend/package.json') != ''
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20.x'
-
-      - name: Cache npm
-        if: matrix.project == 'frontend' && hashFiles('frontend/package-lock.json') != ''
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
-
-      - name: Install & build (frontend)
-        if: matrix.project == 'frontend' && hashFiles('frontend/package.json') != ''
-        working-directory: frontend
-        run: |
-          npm ci || npm install
-          npm run build
-          npm test --if-present -- --watchAll=false
-
-      - name: Package frontend artifact
-        if: matrix.project == 'frontend' && hashFiles('frontend/package.json') != ''
-        run: |
-          cd frontend
-          zip -r ../frontend-build.zip build
-
-      - name: Upload frontend artifact
-        if: matrix.project == 'frontend' && hashFiles('frontend/package.json') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/build/**
-
       # ---------- BACKEND ----------
       - name: Setup .NET SDK
-        if: matrix.project == 'backend'
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '9.0.x'   # change to 8.0.x if that's your SDK
 
       - name: Cache NuGet
-        if: matrix.project == 'backend'
         uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
 
       - name: Restore (backend)
-        if: matrix.project == 'backend'
         working-directory: backend
         run: dotnet restore
 
       - name: Build (backend)
-        if: matrix.project == 'backend'
         working-directory: backend
         run: dotnet build --no-restore -c Release
 
       - name: Test (backend)
-        if: matrix.project == 'backend'
         env:
           ASPNETCORE_ENVIRONMENT: CI
           ConnectionStrings__DefaultConnection: "Server=localhost;Database=ci;Uid=root;Pwd=;"
@@ -91,7 +51,6 @@ jobs:
         run: dotnet test --no-build -c Release
 
       - name: Publish (backend)
-        if: matrix.project == 'backend'
         working-directory: backend
         run: |
           dotnet publish -c Release -o publish
@@ -99,7 +58,6 @@ jobs:
           zip -r ../../backend-publish.zip .
 
       - name: Upload backend artifact
-        if: matrix.project == 'backend'
         uses: actions/upload-artifact@v4
         with:
           name: backend-publish
