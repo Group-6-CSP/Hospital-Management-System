@@ -1,60 +1,103 @@
-name: Backend CI (dotnet 8) — explicit paths
+name: CI Pipeline
 
 on:
   push:
-    branches: [ main, deployment, 'feature/**' ]
+    branches:
+      - main
+      - develop
+      - "feature/*"
   pull_request:
-    branches: [ main, deployment ]
-
-permissions:
-  contents: read
+    branches:
+      - main
+      - develop
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        project: [frontend, backend]
+
     steps:
-      - name: Checkout repository (full)
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # ---------- FRONTEND ----------
+      - name: Setup Node.js
+        if: matrix.project == 'frontend' && hashFiles('frontend/package.json') != ''
+        uses: actions/setup-node@v3
         with:
-          fetch-depth: 0
+          node-version: '20.x'
 
-      - name: Show files (diagnostic)
+      - name: Cache npm
+        if: matrix.project == 'frontend' && hashFiles('frontend/package-lock.json') != ''
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install & build (frontend)
+        if: matrix.project == 'frontend' && hashFiles('frontend/package.json') != ''
+        working-directory: frontend
         run: |
-          echo "=== repo root ==="
-          ls -la
-          echo "=== backend folder ==="
-          ls -la backend || true
-          echo "=== find csproj/sln files ==="
-          find . -maxdepth 4 -type f \( -name '*.csproj' -o -name '*.sln' \) -print || true
+          npm ci || npm install
+          npm run build
+          npm test --if-present -- --watchAll=false
+      - name: Package frontend artifact
+        if: matrix.project == 'frontend' && hashFiles('frontend/package.json') != ''
+        run: |
+          cd frontend
+          zip -r ../frontend-build.zip build
+      - name: Upload frontend artifact
+        if: matrix.project == 'frontend' && hashFiles('frontend/package.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/build/**
 
-      - name: Setup .NET 8
+      # ---------- BACKEND ----------
+      - name: Setup .NET SDK
+        if: matrix.project == 'backend'
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'   # change to 8.0.x if that's your SDK
 
-      - name: Restore (prefer root solution, fallback to backend csproj)
-        run: |
-          if [ -f "./backend.sln" ]; then
-            echo "Using backend.sln at repo root"
-            dotnet restore ./backend.sln
-          elif [ -f "./backend/backend.csproj" ]; then
-            echo "Using backend/backend.csproj"
-            dotnet restore ./backend/backend.csproj
-          else
-            echo "ERROR: No backend.sln or backend/backend.csproj found. See listing above."
-            exit 2
-          fi
+      - name: Cache NuGet
+        if: matrix.project == 'backend'
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
 
-      - name: Build (use solution if available)
-        run: |
-          if [ -f "./backend.sln" ]; then
-            dotnet build ./backend.sln --configuration Release --no-restore
-          else
-            dotnet build ./backend/backend.csproj --configuration Release --no-restore
-          fi
+      - name: Restore (backend)
+        if: matrix.project == 'backend'
+        working-directory: backend
+        run: dotnet restore
 
-      - name: Test (run all tests under backend)
+      - name: Build (backend)
+        if: matrix.project == 'backend'
+        working-directory: backend
+        run: dotnet build --no-restore -c Release
+
+      - name: Test (backend)
+        if: matrix.project == 'backend'
+        env:
+          ASPNETCORE_ENVIRONMENT: CI
+          ConnectionStrings__DefaultConnection: "Server=localhost;Database=ci;Uid=root;Pwd=;"
+        working-directory: backend
+        run: dotnet test --no-build -c Release
+
+      - name: Publish (backend)
+        if: matrix.project == 'backend'
+        working-directory: backend
         run: |
-          # run tests by pointing to the backend folder; dotnet will discover test projects
-          dotnet test ./backend --no-build --verbosity normal
+          dotnet publish -c Release -o publish
+          cd publish
+          zip -r ../../backend-publish.zip .
+      - name: Upload backend artifact
+        if: matrix.project == 'backend'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-publish
+          path: backend/publish/**
