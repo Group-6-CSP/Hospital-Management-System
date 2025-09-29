@@ -1,0 +1,7 @@
+TC-ID,Title,Endpoint,Method,Precondition,Steps,Expected,Actual,Status,Evidence
+,,,,,,,,,
+TC-AUTH-001,Register User (valid),/api/auth/register,POST,None,POST valid JSON payload,200 OK,200OK,Pass,TC-AUTH-001.png
+TC-AUTH-002,Register with missing field,/api/auth/register,POST,None,POST payload missing DOB,400 Bad Request,400Bad Request,Pass,TC-AUTH-002.png
+TC-AUTH-003,Register with duplicate email,/api/auth/register,POST,User exists,POST same email again,409 Conflict,409 Conflict,Pass,TC-AUTH-003.png
+TC-AUTH-004,Login with valid credentials,/api/auth/login,POST,User exists,POST correct email/password,200 OK + JWT token,200 OK,Pass,TC-AUTH-004.png
+TC-AUTH-005,Login with wrong password,/api/auth/login,POST,User exists,POST incorrect password,401 Unauthorized,401 Unauthorized,Pass,TC-AUTH-005.png
