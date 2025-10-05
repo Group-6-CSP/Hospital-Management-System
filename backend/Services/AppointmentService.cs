@@ -12,7 +12,7 @@ namespace backend.Services
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        // 🟢 GET all appointments
+        //  GET all appointments
         public List<Appointment> GetAll()
         {
             var list = new List<Appointment>();
@@ -40,7 +40,7 @@ namespace backend.Services
             return list;
         }
 
-        // 🟢 GET appointments by patient ID
+        //  GET appointments by patient ID
         public List<Appointment> GetByPatient(string patientId)
         {
             var list = new List<Appointment>();
@@ -69,7 +69,7 @@ namespace backend.Services
             return list;
         }
 
-        // 🟢 POST - Create new appointment
+        //  POST - Create new appointment
         public void Create(Appointment appointment)
         {
             using var conn = new MySqlConnection(_connectionString);
@@ -90,7 +90,7 @@ namespace backend.Services
             cmd.ExecuteNonQuery();
         }
 
-        // 🟡 PUT - Update appointment status
+        //  PUT - Update appointment status
         public bool UpdateStatus(string id, string status)
         {
             using var conn = new MySqlConnection(_connectionString);
@@ -105,7 +105,7 @@ namespace backend.Services
             return rows > 0;
         }
 
-        // 🔴 DELETE appointment by ID
+        //  DELETE appointment by ID
         public void Delete(string id)
         {
             using var conn = new MySqlConnection(_connectionString);
