@@ -32,6 +32,54 @@ namespace HospitalManagementSystem.Controllers
             return reader[columnName] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader[columnName]);
         }
 
+        // GET /api/appointments - Get all appointments (for admin)
+        [HttpGet]
+        public IActionResult GetAllAppointments()
+        {
+            try
+            {
+                using var connection = new MySqlConnection(_connectionString);
+                connection.Open();
+
+                var cmd = new MySqlCommand(
+                    @"SELECT a.*, 
+                             p.Name as PatientName, 
+                             d.Name as DoctorName, 
+                             d.Department
+                      FROM Appointments a
+                      LEFT JOIN Patients p ON a.PatientId = p.PatientId
+                      LEFT JOIN Doctors d ON a.DoctorId = d.DoctorId
+                      ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC",
+                    connection);
+
+                var reader = cmd.ExecuteReader();
+                var appointments = new List<object>();
+
+                while (reader.Read())
+                {
+                    appointments.Add(new
+                    {
+                        appointmentId = SafeGetString(reader, "AppointmentId"),
+                        patientId = SafeGetString(reader, "PatientId"),
+                        patientName = SafeGetString(reader, "PatientName"),
+                        doctorId = SafeGetString(reader, "DoctorId"),
+                        doctorName = SafeGetString(reader, "DoctorName"),
+                        department = SafeGetString(reader, "Department"),
+                        appointmentDate = SafeGetDateTime(reader, "AppointmentDate"),
+                        appointmentTime = SafeGetString(reader, "AppointmentTime"),
+                        status = SafeGetString(reader, "Status"),
+                        reason = SafeGetString(reader, "Reason")
+                    });
+                }
+
+                return Ok(new { data = appointments });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
         // USER STORY 1: Book Appointment
         // POST /api/appointments
         [HttpPost]
@@ -256,6 +304,53 @@ namespace HospitalManagementSystem.Controllers
                     });
 
                 return StatusCode(500, new { error = "Reschedule failed" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // DELETE /api/appointments/{appointmentId} - Cancel appointment
+        [HttpDelete("{appointmentId}")]
+        public IActionResult CancelAppointment(string appointmentId)
+        {
+            try
+            {
+                using var connection = new MySqlConnection(_connectionString);
+                connection.Open();
+
+                var getCmd = new MySqlCommand(
+                    "SELECT Status FROM Appointments WHERE AppointmentId=@AppointmentId", 
+                    connection);
+                getCmd.Parameters.AddWithValue("@AppointmentId", appointmentId);
+                var result = getCmd.ExecuteScalar();
+
+                if (result == null)
+                    return NotFound(new { error = "Appointment not found" });
+
+                string currentStatus = result.ToString()!;
+
+                if (currentStatus == "Completed")
+                    return BadRequest(new { error = "Cannot cancel a completed appointment" });
+
+                if (currentStatus == "Cancelled")
+                    return BadRequest(new { error = "Appointment is already cancelled" });
+
+                var updateCmd = new MySqlCommand(
+                    "UPDATE Appointments SET Status=@Status, UpdatedAt=@UpdatedAt WHERE AppointmentId=@AppointmentId",
+                    connection);
+
+                updateCmd.Parameters.AddWithValue("@Status", "Cancelled");
+                updateCmd.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
+                updateCmd.Parameters.AddWithValue("@AppointmentId", appointmentId);
+
+                int rowsAffected = updateCmd.ExecuteNonQuery();
+
+                if (rowsAffected > 0)
+                    return Ok(new { message = "Appointment cancelled successfully" });
+
+                return StatusCode(500, new { error = "Cancellation failed" });
             }
             catch (Exception ex)
             {
