@@ -5,7 +5,7 @@ function PatientList() {
     const [patients, setPatients] = useState([]);
 
     useEffect(() => {
-        fetch("https://localhost:7018/api/patients")
+        fetch("http://localhost:5239/api/patients")
             .then(res => res.json())
             .then(data => setPatients(data))
             .catch(err => console.error("Error fetching patients:", err));
@@ -14,7 +14,7 @@ function PatientList() {
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this patient?")) {
             try {
-                const res = await fetch(`https://localhost:7018/api/patients/${id}`, { method: "DELETE" });
+                const res = await fetch(`http://localhost:5239/api/patients/${id}`, { method: "DELETE" });
                 if (res.ok) setPatients(patients.filter(p => p.patientId !== id));
                 else {
                     const error = await res.json();

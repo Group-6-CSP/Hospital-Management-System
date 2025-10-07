@@ -27,7 +27,7 @@ function RegisterPatient() {
         if (formData.medicalNotes.length > 500) { setMessage("Medical Notes must be less than 500 characters"); return; }
 
         try {
-            const response = await fetch("https://localhost:7018/api/patients", {
+            const response = await fetch("http://localhost:5239/api/patients", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)

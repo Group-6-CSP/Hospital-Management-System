@@ -18,7 +18,7 @@ function UpdatePatient({ onPatientUpdate }) {
     const [messageType, setMessageType] = useState(""); // "success" or "error"
 
     useEffect(() => {
-        fetch(`https://localhost:7018/api/patients/${id}`)
+        fetch(`http://localhost:5239/api/patients/${id}`)
             .then((res) => res.json())
             .then((data) => setFormData(data))
             .catch((err) => {
@@ -58,7 +58,7 @@ function UpdatePatient({ onPatientUpdate }) {
         }
 
         try {
-            const response = await fetch(`https://localhost:7018/api/patients/${id}`, {
+            const response = await fetch(`http://localhost:5239/api/patients/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
