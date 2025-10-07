@@ -314,24 +314,21 @@ namespace HospitalManagementSystem.Controllers
         }
 
         // Utility: Generate PatientId (P-XXXXXXXX)
-        private string GeneratePatientId()
-        {
-            using var connection = new MySqlConnection(_connectionString);
-            connection.Open();
+       private string GeneratePatientId()
+{
+    using var connection = new MySqlConnection(_connectionString);
+    connection.Open();
 
-            var cmd = new MySqlCommand("SELECT PatientId FROM Patients ORDER BY PatientId DESC LIMIT 1", connection);
-            var result = cmd.ExecuteScalar();
+    // Get the maximum numeric value from existing patient IDs
+    var cmd = new MySqlCommand(
+        @"SELECT COALESCE(MAX(CAST(SUBSTRING(PatientId, 3) AS UNSIGNED)), 0) + 1 AS NextId 
+          FROM Patients", 
+        connection);
+    
+    var result = cmd.ExecuteScalar();
+    int nextNum = Convert.ToInt32(result);
 
-            if (result != null)
-            {
-                string lastId = result.ToString()!;
-                int num = int.Parse(lastId.Substring(2));
-                return "P-" + (num + 1).ToString("D8");
-            }
-            else
-            {
-                return "P-00000001";
-            }
-        }
+    return "P-" + nextNum.ToString("D8");
+}
     }
 }
