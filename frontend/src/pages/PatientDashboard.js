@@ -1,15 +1,66 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function PatientDashboard() {
-    const patientInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const navigate = useNavigate();
+    const [patientInfo, setPatientInfo] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    const patientId = localStorage.getItem('patientId');
+
+    useEffect(() => {
+        const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (!userInfo.email) {
+            navigate('/login');
+            return;
+        }
+
+        // Fetch patient details if patientId exists
+        if (patientId) {
+            axios.get(`http://localhost:5239/api/patients/${patientId}`)
+                .then(res => {
+                    setPatientInfo(res.data);
+                    setLoading(false);
+                })
+                .catch(err => {
+                    console.error('Error fetching patient info:', err);
+                    setLoading(false);
+                });
+        } else {
+            setLoading(false);
+        }
+    }, [navigate, patientId]);
+
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good Morning';
+        if (hour < 17) return 'Good Afternoon';
+        return 'Good Evening';
+    };
+
+    const getFirstName = () => {
+        if (patientInfo && patientInfo.name) {
+            return patientInfo.name.split(' ')[0];
+        }
+        return 'there';
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <p className="text-xl text-gray-600">Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-100 py-10 px-4">
             <div className="max-w-5xl mx-auto">
                 <div className="bg-white shadow-lg rounded-2xl p-8 mb-8">
                     <h1 className="text-3xl font-bold text-blue-600 mb-2">
-                        Welcome, {patientInfo.fullName || 'Patient'}!
+                        {getGreeting()}, {getFirstName()}! 👋
                     </h1>
                     <p className="text-gray-600">
                         Manage your appointments and health records
