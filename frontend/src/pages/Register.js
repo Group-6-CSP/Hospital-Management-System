@@ -14,6 +14,7 @@ function Register() {
         gender: ""
     });
     const [message, setMessage] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -22,46 +23,99 @@ function Register() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setMessage("");
+        setIsLoading(true);
 
-        // Validation
+        // Client-side validation
+        if (!formData.fullName || !formData.email || !formData.password || 
+            !formData.contact || !formData.dob || !formData.gender) {
+            setMessage("All fields are required");
+            setIsLoading(false);
+            return;
+        }
+
         if (formData.password !== formData.confirmPassword) {
             setMessage("Passwords do not match");
+            setIsLoading(false);
+            return;
+        }
+
+        if (formData.password.length < 6) {
+            setMessage("Password must be at least 6 characters");
+            setIsLoading(false);
             return;
         }
 
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             setMessage("Invalid email format");
+            setIsLoading(false);
             return;
         }
 
         if (!/^\d{10}$/.test(formData.contact)) {
             setMessage("Contact must be 10 digits");
+            setIsLoading(false);
             return;
         }
 
         try {
-            // Register user
+            console.log("Step 1: Registering user...");
+            
+            // Step 1: Register user in Users table
             const userResponse = await axios.post('http://localhost:5239/api/auth/register', {
+                fullName: formData.fullName,
+                dob: formData.dob,
                 email: formData.email,
                 password: formData.password,
+                contact: formData.contact,
                 role: 'Patient'
             });
 
-            // Register patient
+            console.log("User registered successfully:", userResponse.data);
+            const userId = userResponse.data.userId;
+
+            console.log("Step 2: Creating patient record...");
+
+            // Step 2: Create patient record in Patients table
             const patientResponse = await axios.post('http://localhost:5239/api/patients', {
-                userId: userResponse.data.userId,
+                userId: userId,
                 name: formData.fullName,
+                email: formData.email,
                 dob: formData.dob,
                 gender: formData.gender,
                 contact: formData.contact,
-                email: formData.email,
                 medicalNotes: ""
             });
 
+            console.log("Patient created successfully:", patientResponse.data);
+
             setMessage("Registration successful! Redirecting to login...");
-            setTimeout(() => navigate('/login'), 2000);
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000);
+
         } catch (error) {
-            setMessage(error.response?.data?.error || "Registration failed");
+            console.error("Registration error:", error);
+            
+            // Better error handling
+            if (error.response) {
+                // Server responded with error
+                const errorMsg = error.response.data?.error || error.response.data?.message || "Registration failed";
+                setMessage(errorMsg);
+                
+                // Log detailed error for debugging
+                console.error("Server error:", error.response.data);
+            } else if (error.request) {
+                // Request made but no response
+                setMessage("Cannot connect to server. Please make sure the backend is running.");
+                console.error("No response from server");
+            } else {
+                // Something else happened
+                setMessage("Registration failed: " + error.message);
+                console.error("Error:", error.message);
+            }
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -78,7 +132,7 @@ function Register() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Full Name
+                            Full Name <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
@@ -93,7 +147,7 @@ function Register() {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Email
+                            Email <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="email"
@@ -108,7 +162,7 @@ function Register() {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Contact Number
+                            Contact Number <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
@@ -124,13 +178,14 @@ function Register() {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Date of Birth
+                            Date of Birth <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="date"
                             name="dob"
                             value={formData.dob}
                             onChange={handleChange}
+                            max={new Date().toISOString().split('T')[0]}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             required
                         />
@@ -138,7 +193,7 @@ function Register() {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Gender
+                            Gender <span className="text-red-500">*</span>
                         </label>
                         <select
                             name="gender"
@@ -156,14 +211,15 @@ function Register() {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Password
+                            Password <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="password"
                             name="password"
-                            placeholder="Create a password"
+                            placeholder="Create a password (min 6 characters)"
                             value={formData.password}
                             onChange={handleChange}
+                            minLength="6"
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             required
                         />
@@ -171,7 +227,7 @@ function Register() {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Confirm Password
+                            Confirm Password <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="password"
@@ -179,6 +235,7 @@ function Register() {
                             placeholder="Confirm your password"
                             value={formData.confirmPassword}
                             onChange={handleChange}
+                            minLength="6"
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             required
                         />
@@ -186,9 +243,10 @@ function Register() {
 
                     <button
                         type="submit"
-                        className="w-full py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+                        disabled={isLoading}
+                        className="w-full py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                        Register
+                        {isLoading ? 'Registering...' : 'Register'}
                     </button>
                 </form>
 
