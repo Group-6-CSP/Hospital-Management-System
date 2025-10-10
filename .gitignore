@@ -343,6 +343,14 @@ paket-files/
 **/__pycache__/
 *.pyc
 
+# Local virtual environments and Python caches
+**/.venv/
+
+# Test run outputs and generated reports
+reports/test-runs/
+reports/test-summary.md
+frontend/junit.xml
+
 # Cake - Uncomment if you are using it
 #tools/**
 #!tools/packages.config
