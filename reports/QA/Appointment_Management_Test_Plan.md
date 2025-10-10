@@ -1,8 +1,8 @@
 # Appointment Management – QA Test Plan
 
-Date: 2025-10-10
-Owner: QA - Dilara
-Module: Appointment Management (Backend: ASP.NET Core, DB: Azure MySQL, Frontend: React)
+- Date: 2025-10-10
+- Owner: QA - Dilara
+- Module: Appointment Management (Backend: ASP.NET Core, DB: Azure MySQL, Frontend: React)
 
 ## 1. Scope
 Features covered:
