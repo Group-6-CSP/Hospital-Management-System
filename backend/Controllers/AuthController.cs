@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using HospitalManagementSystem.Models;

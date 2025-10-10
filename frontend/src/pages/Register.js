@@ -1,225 +1,272 @@
-// JavaScript source code
 import React, { useState } from "react";
-import { registerUser } from "../services/authService";
+import { useNavigate } from "react-router-dom";
+import axios from 'axios';
 
 function Register() {
-  const [formData, setFormData] = useState({
-    fullName: "",
-    dob: "",
-    email: "",
-    password: "",
-    contact: "",
-    role: "Patient",
-  });
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({
+        fullName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        contact: "",
+        dob: "",
+        gender: ""
+    });
+    const [message, setMessage] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
-  const [errors, setErrors] = useState({});
-  const [message, setMessage] = useState("");
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+    };
 
-  // Validation rules
-  const validate = () => {
-    const newErrors = {};
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setMessage("");
+        setIsLoading(true);
 
-    if (!/^[A-Za-z ]+$/.test(formData.fullName)) {
-      newErrors.fullName = "Name must contain alphabets only";
-    }
+        // Client-side validation
+        if (!formData.fullName || !formData.email || !formData.password || 
+            !formData.contact || !formData.dob || !formData.gender) {
+            setMessage("All fields are required");
+            setIsLoading(false);
+            return;
+        }
 
-    if (!formData.dob || new Date(formData.dob) > new Date()) {
-      newErrors.dob = "Enter a valid date of birth";
-    }
+        if (formData.password !== formData.confirmPassword) {
+            setMessage("Passwords do not match");
+            setIsLoading(false);
+            return;
+        }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Enter a valid email address";
-    }
+        if (formData.password.length < 6) {
+            setMessage("Password must be at least 6 characters");
+            setIsLoading(false);
+            return;
+        }
 
-    if (
-      !/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
-        formData.password
-      )
-    ) {
-      newErrors.password =
-        "Password must be at least 8 chars, include 1 uppercase, 1 number, 1 special char";
-    }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            setMessage("Invalid email format");
+            setIsLoading(false);
+            return;
+        }
 
-    if (!/^07\d{8}$/.test(formData.contact)) {
-      newErrors.contact =
-        "Contact must be a valid 10-digit Sri Lankan number (07XXXXXXXX)";
-    }
+        if (!/^\d{10}$/.test(formData.contact)) {
+            setMessage("Contact must be 10 digits");
+            setIsLoading(false);
+            return;
+        }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+        try {
+            console.log("Step 1: Registering user...");
+            
+            // Step 1: Register user in Users table
+            const userResponse = await axios.post('http://localhost:5239/api/auth/register', {
+                fullName: formData.fullName,
+                dob: formData.dob,
+                email: formData.email,
+                password: formData.password,
+                contact: formData.contact,
+                role: 'Patient'
+            });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+            console.log("User registered successfully:", userResponse.data);
+            const userId = userResponse.data.userId;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
+            console.log("Step 2: Creating patient record...");
 
-    try {
-      const res = await registerUser(formData);
-      setMessage(res.message);
-      setErrors({});
-    } catch (err) {
-      setMessage(err.error || "Registration failed");
-    }
-  };
+            // Step 2: Create patient record in Patients table
+            const patientResponse = await axios.post('http://localhost:5239/api/patients', {
+                userId: userId,
+                name: formData.fullName,
+                email: formData.email,
+                dob: formData.dob,
+                gender: formData.gender,
+                contact: formData.contact,
+                medicalNotes: ""
+            });
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-lg">
-        {/* Title */}
-        <h1 className="text-2xl font-bold text-center text-blue-600 mb-6">
-          Smart Care
-        </h1>
-        <h2 className="text-xl font-semibold text-center text-gray-700 mb-6">
-          User Registration
-        </h2>
+            console.log("Patient created successfully:", patientResponse.data);
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Full Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600">
-              Full Name
-            </label>
-            <input
-              type="text"
-              name="fullName"
-              placeholder="Enter your full name"
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-            {errors.fullName && (
-              <p className="text-red-600 text-sm mt-1">{errors.fullName}</p>
-            )}
-          </div>
+            setMessage("Registration successful! Redirecting to login...");
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000);
 
-          {/* DOB */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600">
-              Date of Birth
-            </label>
-            <input
-              type="date"
-              name="dob"
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-            {errors.dob && (
-              <p className="text-red-600 text-sm mt-1">{errors.dob}</p>
-            )}
-          </div>
+        } catch (error) {
+            console.error("Registration error:", error);
+            
+            // Better error handling
+            if (error.response) {
+                // Server responded with error
+                const errorMsg = error.response.data?.error || error.response.data?.message || "Registration failed";
+                setMessage(errorMsg);
+                
+                // Log detailed error for debugging
+                console.error("Server error:", error.response.data);
+            } else if (error.request) {
+                // Request made but no response
+                setMessage("Cannot connect to server. Please make sure the backend is running.");
+                console.error("No response from server");
+            } else {
+                // Something else happened
+                setMessage("Registration failed: " + error.message);
+                console.error("Error:", error.message);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              placeholder="Enter your email"
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-            {errors.email && (
-              <p className="text-red-600 text-sm mt-1">{errors.email}</p>
-            )}
-          </div>
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 py-10 px-4">
+            <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-lg">
+                <h1 className="text-2xl font-bold text-center text-blue-600 mb-2">
+                    Smart Care Hospital
+                </h1>
+                <p className="text-gray-600 text-center mb-6">
+                    Create your patient account
+                </p>
 
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              placeholder="Enter a strong password"
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-            {errors.password && (
-              <p className="text-red-600 text-sm mt-1">{errors.password}</p>
-            )}
-          </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Full Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="fullName"
+                            placeholder="Enter your full name"
+                            value={formData.fullName}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            required
+                        />
+                    </div>
 
-          {/* Contact */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600">
-              Contact Number
-            </label>
-            <input
-              type="text"
-              name="contact"
-              placeholder="07XXXXXXXX"
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-            {errors.contact && (
-              <p className="text-red-600 text-sm mt-1">{errors.contact}</p>
-            )}
-          </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="Enter your email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            required
+                        />
+                    </div>
 
-          {/* Role */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600">
-              Role
-            </label>
-            <select
-              name="role"
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              <option>Patient</option>
-              <option>Doctor</option>
-              <option>Admin</option>
-              <option>Vendor</option>
-            </select>
-          </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Contact Number <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="contact"
+                            placeholder="Enter 10-digit contact number"
+                            value={formData.contact}
+                            onChange={handleChange}
+                            maxLength="10"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            required
+                        />
+                    </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 transition"
-          >
-            Register
-          </button>
-        </form>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Date of Birth <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="date"
+                            name="dob"
+                            value={formData.dob}
+                            onChange={handleChange}
+                            max={new Date().toISOString().split('T')[0]}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            required
+                        />
+                    </div>
 
-        {/* Success/Error Message */}
-        {message && (
-          <p
-            className={`mt-4 text-center text-sm ${
-              message.toLowerCase().includes("success")
-                ? "text-green-600"
-                : "text-red-600"
-            }`}
-          >
-            {message}
-          </p>
-        )}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Gender <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="gender"
+                            value={formData.gender}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            required
+                        >
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
 
-        {/* Redirect to Login */}
-        <p className="mt-6 text-center text-gray-500 text-sm">
-          Already have an account?{" "}
-          <a
-            href="/login"
-            className="text-blue-600 hover:underline font-medium"
-          >
-            Login
-          </a>
-        </p>
-      </div>
-    </div>
-  );
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Password <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="password"
+                            name="password"
+                            placeholder="Create a password (min 6 characters)"
+                            value={formData.password}
+                            onChange={handleChange}
+                            minLength="6"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Confirm Password <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="password"
+                            name="confirmPassword"
+                            placeholder="Confirm your password"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            minLength="6"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            required
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                        {isLoading ? 'Registering...' : 'Register'}
+                    </button>
+                </form>
+
+                {message && (
+                    <p className={`mt-4 text-center font-medium ${
+                        message.includes("successful") ? "text-green-600" : "text-red-600"
+                    }`}>
+                        {message}
+                    </p>
+                )}
+
+                <p className="mt-6 text-center text-gray-500 text-sm">
+                    Already have an account?{" "}
+                    <a href="/login" className="text-blue-600 hover:underline font-medium">
+                        Login here
+                    </a>
+                </p>
+            </div>
+        </div>
+    );
 }
 
 export default Register;

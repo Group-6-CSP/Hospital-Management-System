@@ -1,4 +1,4 @@
-﻿namespace HospitalManagementSystem.DTOs
+namespace HospitalManagementSystem.DTOs
 {
     public class LoginRequest
     {
