@@ -1,0 +1,111 @@
+{
+  "info": {
+    "name": "HMS Appointments API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login (Patient)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": [ "{{baseUrl}}" ], "path": [ "api", "auth", "login" ] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{patientEmail}}\",\n  \"password\": \"{{patientPassword}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.environment.set('token', json.token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Book Appointment (Happy Path)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/appointments", "host": [ "{{baseUrl}}" ], "path": [ "api", "appointments" ] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"PatientId\": \"P123\",\n  \"DoctorId\": \"D456\",\n  \"Date\": \"{{bookDate}}\",\n  \"Time\": \"11:30\",\n  \"Reason\": \"postman e2e\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 or 201-like OK', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+              "var json = pm.response.json();",
+              "pm.environment.set('appointmentId', json.appointmentId || json.id);",
+              "pm.test('appointmentId set', function(){ pm.expect(pm.environment.get('appointmentId')).to.be.ok; });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reschedule Appointment",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/reschedule", "host": [ "{{baseUrl}}" ], "path": [ "api", "appointments", "{{appointmentId}}", "reschedule" ] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"NewDate\": \"{{rescheduleDate}}\",\n  \"NewTime\": \"12:00\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Reschedule 200 OK', function () { pm.response.to.have.status(200); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cancel Appointment",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}", "host": [ "{{baseUrl}}" ], "path": [ "api", "appointments", "{{appointmentId}}" ] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Cancel 200 OK', function () { pm.response.to.have.status(200); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}
