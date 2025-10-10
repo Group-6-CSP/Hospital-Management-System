@@ -1,0 +1,16 @@
+TC-ID,Title,Endpoint,Method,Precondition,Steps,Expected,Actual,Status,Evidence
+,,,,,,,,,
+TC-AUTH-001,Register User (valid),/api/auth/register,POST,None,POST valid JSON payload,200 OK,200OK,Pass,TC-AUTH-001.png
+TC-AUTH-002,Register with missing field,/api/auth/register,POST,None,POST payload missing DOB,400 Bad Request,400Bad Request,Pass,TC-AUTH-002.png
+TC-AUTH-003,Register with duplicate email,/api/auth/register,POST,User exists,POST same email again,409 Conflict,409 Conflict,Pass,TC-AUTH-003.png
+TC-AUTH-004,Register with invalid email,/api/auth/register,POST,None,POST payload with invalid email (missing @),400 Bad Request,200 OK,Fail,TC-AUTH-004.png
+TC-AUTH-005,Register with weak password,/api/auth/register,POST,None,POST payload with weak password (e.g. 12345),400 Bad Request,200 OK,Fail,TC-AUTH-005.png
+TC-AUTH-006,Register with future DOB,/api/auth/register,POST,None,POST payload with future DOB,400 Bad Request,400 Bad Request,Pass,TC-AUTH-006.png
+TC-AUTH-007,Register missing password,/api/auth/register,POST,None,POST payload missing password,400 Bad Request,400 Bad Request,Pass,TC-AUTH-007.png
+TC-AUTH-008,Register with SQL injection in Email,/api/auth/register,POST,None,POST payload with SQL injection in Email,400 Bad Request,200 OK,Fail,TC-AUTH-008.png
+TC-AUTH-009,Login with valid credentials,/api/auth/login,POST,User exists,POST correct email/password,200 OK + JWT token,200 OK,Pass,TC-AUTH-009.png
+TC-AUTH-010,Login with wrong password,/api/auth/login,POST,User exists,POST incorrect password,401 Unauthorized,401 Unauthorized,Pass,TC-AUTH-010.png
+TC-AUTH-011,Login with non-existing email,/api/auth/login,POST,None,POST login with unknown email,401 Unauthorized,401 Unauthorized,Pass,TC-AUTH-011.png
+TC-AUTH-012,Login with empty email/password,/api/auth/login,POST,None,POST empty Email and Password fields,401 Unauthorized,401 Unauthorized,Pass,TC-AUTH-012.png
+TC-AUTH-013,Login with SQL injection in password,/api/auth/login,POST,User exists,POST password with SQL injection,401 Unauthorized,401 Unauthorized,Pass,TC-AUTH-013.png
+TC-AUTH-014,Login with case-sensitive email,/api/auth/login,POST,User exists,POST email with different case (e.g. JOHN@example.com),200 OK,200 OK,Pass,TC-AUTH-014.png
