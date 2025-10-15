@@ -2,7 +2,7 @@ using MySql.Data.MySqlClient;
 using HospitalManagementSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Configuration.AddEnvironmentVariables();
 // Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

@@ -1,4 +1,4 @@
--- Seed data for Azure Database for MySQL
+/*-- Seed data for Azure Database for MySQL
 -- Assumes schema.sql has been applied
 
 -- Upsert-like inserts using INSERT IGNORE for idempotency
@@ -26,3 +26,4 @@ INSERT IGNORE INTO Appointments (AppointmentId, PatientId, DoctorId, Appointment
 VALUES
 	('A1001', 'P123', 'D456', DATE_ADD(CURDATE(), INTERVAL 30 DAY), '10:00', 'Scheduled', 'Routine checkup');
 
+*/

@@ -1,0 +1,39 @@
+name: Build and Deploy Backend to Azure via FTPS
+
+on:
+  push:
+    branches: [ main, feature/appointment ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore ./backend
+
+      - name: Build backend
+        run: dotnet build ./backend --configuration Release --no-restore
+
+      - name: Publish backend
+        run: dotnet publish ./backend -c Release -o ./publish
+
+      - name: Deploy to Azure App Service via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.AZURE_FTP_SERVER }}
+          username: ${{ secrets.AZURE_FTP_USERNAME }}
+          password: ${{ secrets.AZURE_FTP_PASSWORD }}
+          local-dir: ./publish
+          server-dir: /site/wwwroot
+          protocol: ftps
+          dangerous-clean-slate: true

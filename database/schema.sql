@@ -1,4 +1,4 @@
--- Azure Database for MySQL schema for Appointment Management
+/*-- Azure Database for MySQL schema for Appointment Management
 -- Reset-and-create approach to avoid legacy type mismatches
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -64,3 +64,4 @@ CREATE TABLE IF NOT EXISTS Appointments (
 
 -- Indexes are declared within the table definition above for idempotency
 
+*/
