@@ -1,39 +1,41 @@
-name: Build and Deploy Backend to Azure via FTPS
+name: Build and Deploy Backend to Azure App Service
 
 on:
   push:
-    branches: [ main, feature/appointment ]
+    branches:
+      - feature/appointment
   workflow_dispatch:
 
+env:
+  AZURE_WEBAPP_NAME: hospital-backend-app
+  AZURE_WEBAPP_PACKAGE_PATH: './backend'
+  DOTNET_VERSION: '9.0.x'
+
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore dependencies
-        run: dotnet restore ./backend
+    - name: Restore dependencies
+      run: dotnet restore
 
-      - name: Build backend
-        run: dotnet build ./backend --configuration Release --no-restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
 
-      - name: Publish backend
-        run: dotnet publish ./backend -c Release -o ./publish
+    - name: Publish
+      run: dotnet publish --configuration Release --output ./publish
 
-      - name: Deploy to Azure App Service via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.AZURE_FTP_SERVER }}
-          username: ${{ secrets.AZURE_FTP_USERNAME }}
-          password: ${{ secrets.AZURE_FTP_PASSWORD }}
-          local-dir: ./publish/
-          server-dir: /site/wwwroot/
-          protocol: ftps
-          dangerous-clean-slate: true
+    - name: Deploy to Azure WebApp using Publish Profile
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+        package: ./publish
