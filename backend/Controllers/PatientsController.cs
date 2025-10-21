@@ -70,7 +70,22 @@ namespace HospitalManagementSystem.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
-
+       //........................... ..........................
+[HttpGet("test-connection")]
+public IActionResult TestConnection()
+{
+    try
+    {
+        using var connection = new MySqlConnection(_connectionString);
+        connection.Open();
+        return Ok("✅ Connection successful to MySQL!");
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"❌ Connection failed: {ex.Message}");
+    }
+}
+//...........................
         // GET /api/patients/{id}
         [HttpGet("{id}")]
         public IActionResult GetPatientById(string id)
