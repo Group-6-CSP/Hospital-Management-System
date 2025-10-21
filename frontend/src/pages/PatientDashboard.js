@@ -79,6 +79,17 @@ function PatientDashboard() {
                             </p>
                         </div>
                     </Link>
+                       <Link to="/patient/billing">
+                        <div className="bg-red-50 hover:bg-red-100 transition rounded-xl p-6 shadow-md cursor-pointer">
+                            <div className="text-4xl mb-4">💰</div>
+                            <h3 className="text-xl font-semibold text-red-700 mb-2">
+                                Bills & Payments
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                                View bills and payment history
+                            </p>
+                        </div>
+                    </Link>
 
                     <Link to="/patient/my-appointments">
                         <div className="bg-green-50 hover:bg-green-100 transition rounded-xl p-6 shadow-md cursor-pointer">
