@@ -64,6 +64,7 @@ import PatientDashboard from './pages/PatientDashboard';
 import PatientBookAppointment from './pages/PatientBookAppointment';
 import PatientMyAppointments from './pages/PatientMyAppointments';
 import PatientProfile from './pages/PatientProfile';
+import Dashboard from './pages/Dashboard';
 
 // NEW: Billing imports
 import AdminBillingDashboard from './pages/AdminBillingDashboard';
@@ -79,9 +80,10 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 
                 {/* Admin Routes */}
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                {/*<Route path="/admin/dashboard" element={<AdminDashboard />} />*/}
                 <Route path="/admin/register" element={<RegisterPatient />} />
                 <Route path="/admin/patients" element={<PatientList />} />
                 <Route path="/admin/patients/:id/edit" element={<UpdatePatient />} />
@@ -95,7 +97,7 @@ function App() {
                 <Route path="/admin/billing/reports" element={<FinancialReport />} />
                 
                 {/* Patient Routes */}
-                <Route path="/patient/dashboard" element={<PatientDashboard />} />
+                {/*<Route path="/patient/dashboard" element={<PatientDashboard />} />*/}
                 <Route path="/patient/book-appointment" element={<PatientBookAppointment />} />
                 <Route path="/patient/my-appointments" element={<PatientMyAppointments />} />
                 <Route path="/patient/profile" element={<PatientProfile />} />
