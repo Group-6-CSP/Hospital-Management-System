@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using HospitalManagementSystem.Models;
+using HospitalManagementSystem.Services;
 using HospitalManagementSystem.DTOs;
 using Microsoft.Extensions.Configuration;
 
