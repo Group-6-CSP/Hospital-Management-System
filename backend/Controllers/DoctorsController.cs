@@ -248,5 +248,48 @@ namespace HospitalManagementSystem.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+        [HttpPost("create-account")]
+        public IActionResult CreateDoctorAccount([FromBody] CreateDoctorRequest request)
+        {
+            try
+            {
+                if (request == null)
+                    return BadRequest(new { error = "Invalid request" });
+
+                var service = new DoctorManagementService(_config);
+                string doctorId = service.CreateDoctorAccount(request);
+
+                return Ok(new
+                {
+                    doctorId,
+                    message = "Doctor account created successfully",
+                    loginEmail = request.Email,
+                    loginPassword = request.Password
+                });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("already exists"))
+                    return Conflict(new { error = ex.Message });
+
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [HttpGet("by-department/{departmentId}")]
+        public IActionResult GetDoctorsByDepartment(string departmentId)
+        {
+            try
+            {
+                var service = new DoctorManagementService(_config);
+                var doctors = service.GetDoctorsByDepartment(departmentId);
+
+                return Ok(doctors);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
     }
 }

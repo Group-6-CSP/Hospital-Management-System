@@ -482,5 +482,44 @@ namespace HospitalManagementSystem.Controllers
                 return "A-00000001";
             }
         }
+        [HttpGet("doctor/{doctorId}")]
+        public IActionResult GetDoctorAppointments(string doctorId, [FromQuery] string from = "", [FromQuery] string to = "")
+        {
+            try
+            {
+                var service = new AppointmentManagementService(_config);
+                var appointments = service.GetDoctorAppointments(doctorId, from, to);
+
+                if (appointments.Count == 0)
+                    return NotFound(new { error = "No appointments found" });
+
+                return Ok(appointments);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpPut("{appointmentId}/status")]
+        public IActionResult UpdateAppointmentStatus(string appointmentId, [FromBody] UpdateAppointmentStatusRequest request)
+        {
+            try
+            {
+                var service = new AppointmentManagementService(_config);
+                service.UpdateAppointmentStatus(appointmentId, request.Status);
+
+                return Ok(new
+                {
+                    appointmentId,
+                    message = $"Appointment status updated to {request.Status}"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
     }
 }
