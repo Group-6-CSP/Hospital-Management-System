@@ -7,6 +7,10 @@ import DoctorReports from '../components/DoctorReports';
 import BillGenerator from '../components/BillGenerator';
 import FinancialReport from '../components/FinancialReport';
 import PaymentHistory from '../components/PaymentHistory';
+import AddDoctorForm from '../components/AddDoctorForm';
+import DoctorAppointmentsList from '../components/DoctorAppointmentsList';
+import BillGeneratorUpdated from '../components/BillGeneratorUpdated';
+
 
 function Dashboard() {
     const navigate = useNavigate();
@@ -66,6 +70,16 @@ function Dashboard() {
                                 }`}
                             >
                                 Overview
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('add-doctor')}
+                                className={`px-4 py-3 font-medium border-b-2 transition ${
+                                    activeTab === 'add-doctor'
+                                        ? 'border-blue-600 text-blue-600'
+                                        : 'border-transparent text-gray-600 hover:text-blue-600'
+                                }`}
+                            >
+                                Add Doctor
                             </button>
                             <button
                                 onClick={() => setActiveTab('doctors')}
@@ -226,12 +240,25 @@ function Dashboard() {
                 )}
 
                 {isAdmin && activeTab === 'billing' && <BillGenerator />}
+                {isAdmin && activeTab === 'billing' && <BillGeneratorUpdated />}
                 {isAdmin && activeTab === 'reports' && (
                     <div className="space-y-6">
                         <FinancialReport />
                         <DoctorReports />
                     </div>
                 )}
+                {isAdmin && activeTab === 'add-doctor' && (
+                    <div>
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className="mb-4 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                        >
+                            Back
+                        </button>
+                        <AddDoctorForm onSuccess={() => setActiveTab('overview')} />
+                    </div>
+                )}
+
 
                 {/* DOCTOR VIEWS */}
                 {isDoctor && activeTab === 'overview' && (
@@ -240,6 +267,7 @@ function Dashboard() {
                         <DoctorSchedule />
                     </div>
                 )}
+                {isDoctor && activeTab === 'appointments' && <DoctorAppointmentsList />}
 
                 {isDoctor && activeTab === 'appointments' && (
                     <div className="space-y-6">
