@@ -36,5 +36,29 @@ namespace HospitalManagementSystem.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
+        [HttpGet("doctors")]
+        public IActionResult GetDoctorReports([FromQuery] string doctorId = "", 
+                                            [FromQuery] string specialization = "", 
+                                            [FromQuery] string from = "", 
+                                            [FromQuery] string to = "")
+        {
+            try
+            {
+                var reportService = new DoctorReportService(_config);
+                var reports = reportService.GenerateDoctorReports(doctorId, specialization, from, to);
+
+                if (reports.Count == 0)
+                    return NotFound(new { error = "No reports found for given filters" });
+
+                return Ok(reports);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("Invalid"))
+                    return BadRequest(new { error = "Invalid date format. Use YYYY-MM-DD" });
+
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
     }
 }
