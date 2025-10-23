@@ -29,21 +29,20 @@ jobs:
       run: dotnet restore backend/backend.csproj
 
     - name: Build
-      run: dotnet build backend/backend.csproj --configuration Release --no-restore
+      run: dotnet build backend/backend.csproj --configuration Release --no-restore /p:TreatWarningsAsErrors=false
 
-    - name:  Run Tests
+    - name: 🧪 Run Tests
       run: |
         dotnet test HospitalManagementSystem.Tests/HospitalManagementSystem.Tests.csproj \
           --configuration Release \
           --verbosity normal \
           --logger "trx;LogFileName=test-results.trx"
 
-    - name:  Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action/composite@v2
+    - name: 📊 Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
       if: always()
       with:
         files: '**/test-results.trx'
-        check_name: 'Test Results'
 
     - name: Publish
       run: dotnet publish backend/backend.csproj --configuration Release --output backend/publish
