@@ -91,18 +91,108 @@
 //         }
 //     }
 // }
+
+//...................................................................
+
+// using System;
+// using System.Collections.Generic;
+// using Microsoft.AspNetCore.Mvc;
+// using MySql.Data.MySqlClient;
+// using Microsoft.Extensions.Configuration;
+// using Microsoft.AspNetCore.Cors;
+
+// namespace HospitalManagementSystem.Controllers
+// {
+//     [ApiController]
+//     [Route("api/[controller]")]
+//     //[EnableCors("AllowAll")]  // Add this line
+//     public class PaymentsController : ControllerBase
+//     {
+//         private readonly IConfiguration _config;
+//         private readonly string _connectionString;
+
+//         public PaymentsController(IConfiguration config)
+//         {
+//             _config = config;
+//             _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
+//                                 ?? _config.GetConnectionString("DefaultConnection");
+//         }
+
+//         private string SafeGetString(MySqlDataReader reader, string columnName)
+//         {
+//             return reader[columnName] == DBNull.Value ? "" : reader[columnName].ToString();
+//         }
+
+//         private DateTime SafeGetDateTime(MySqlDataReader reader, string columnName)
+//         {
+//             return reader[columnName] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader[columnName]);
+//         }
+
+//         private decimal SafeGetDecimal(MySqlDataReader reader, string columnName)
+//         {
+//             return reader[columnName] == DBNull.Value ? 0 : Convert.ToDecimal(reader[columnName]);
+//         }
+
+//         [HttpGet("history/{patientId}")]
+//         public IActionResult GetPaymentHistory(string patientId)
+//         {
+//             try
+//             {
+//                 using var connection = new MySqlConnection(_connectionString);
+//                 connection.Open();
+
+//                 var cmd = new MySqlCommand(
+//                     @"SELECT pm.PaymentId, pm.BillId, pm.AmountPaid, pm.PaymentMode, pm.PaymentDate, pm.Status, b.TotalAmount
+//                       FROM Payments pm
+//                       JOIN Bills b ON pm.BillId = b.BillId
+//                       WHERE pm.PatientId=@PatientId
+//                       ORDER BY pm.PaymentDate DESC",
+//                     connection);
+
+//                 cmd.Parameters.AddWithValue("@PatientId", patientId);
+//                 var reader = cmd.ExecuteReader();
+//                 var payments = new List<object>();
+
+//                 while (reader.Read())
+//                 {
+//                     payments.Add(new
+//                     {
+//                         paymentId = SafeGetString(reader, "PaymentId"),
+//                         billId = SafeGetString(reader, "BillId"),
+//                         amountPaid = SafeGetDecimal(reader, "AmountPaid"),
+//                         totalAmount = SafeGetDecimal(reader, "TotalAmount"),
+//                         paymentMode = SafeGetString(reader, "PaymentMode"),
+//                         paymentDate = SafeGetDateTime(reader, "PaymentDate").ToString("yyyy-MM-dd"),
+//                         status = SafeGetString(reader, "Status")
+//                     });
+//                 }
+
+//                 if (payments.Count == 0)
+//                     return Ok(new List<object>()); // Return empty list instead of 404
+
+//                 return Ok(payments);
+//             }
+//             catch (Exception ex)
+//             {
+//                 return StatusCode(500, new { error = ex.Message });
+//             }
+//         }
+//     }
+// }
+//...................................................
+
 using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Cors;
+using HospitalManagementSystem.DTOs;
+using HospitalManagementSystem.Services;
 
 namespace HospitalManagementSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[EnableCors("AllowAll")]  // Add this line
     public class PaymentsController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -130,6 +220,36 @@ namespace HospitalManagementSystem.Controllers
             return reader[columnName] == DBNull.Value ? 0 : Convert.ToDecimal(reader[columnName]);
         }
 
+        // =====================================================
+        // ADDED: POST /api/payments/record
+        // Record a payment for a bill
+        // =====================================================
+        [HttpPost("record")]
+        public IActionResult RecordPayment([FromBody] RecordPaymentRequest request)
+        {
+            try
+            {
+                var service = new PaymentService(_config);
+                var response = service.RecordPayment(request);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("Bill not found"))
+                    return NotFound(new { error = ex.Message });
+
+                if (ex.Message.Contains("already paid") || ex.Message.Contains("Duplicate"))
+                    return Conflict(new { error = ex.Message, code = 409 });
+
+                if (ex.Message.Contains("cannot exceed"))
+                    return BadRequest(new { error = ex.Message });
+
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // GET /api/payments/history/{patientId}
         [HttpGet("history/{patientId}")]
         public IActionResult GetPaymentHistory(string patientId)
         {
@@ -168,6 +288,27 @@ namespace HospitalManagementSystem.Controllers
                     return Ok(new List<object>()); // Return empty list instead of 404
 
                 return Ok(payments);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // GET /api/payments/all
+        // Get all payments (admin only)
+        [HttpGet("all")]
+        public IActionResult GetAllPayments()
+        {
+            try
+            {
+                var service = new PaymentService(_config);
+                var payments = service.GetAllPayments();
+
+                if (payments.Count == 0)
+                    return Ok(new List<object>()); // Return empty list
+
+                return Ok(new { data = payments });
             }
             catch (Exception ex)
             {
