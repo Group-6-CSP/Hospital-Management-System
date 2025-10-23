@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/appointment
+      - feature/billing-test
   workflow_dispatch:
 
 env:
@@ -29,6 +30,20 @@ jobs:
 
     - name: Build
       run: dotnet build backend/backend.csproj --configuration Release --no-restore
+
+    - name:  Run Tests
+      run: |
+        dotnet test HospitalManagementSystem.Tests/HospitalManagementSystem.Tests.csproj \
+          --configuration Release \
+          --verbosity normal \
+          --logger "trx;LogFileName=test-results.trx"
+
+    - name:  Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action/composite@v2
+      if: always()
+      with:
+        files: '**/test-results.trx'
+        check_name: 'Test Results'
 
     - name: Publish
       run: dotnet publish backend/backend.csproj --configuration Release --output backend/publish
