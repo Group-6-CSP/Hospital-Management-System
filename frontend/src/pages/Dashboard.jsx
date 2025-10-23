@@ -10,6 +10,7 @@ import PaymentHistory from '../components/PaymentHistory';
 import AddDoctorForm from '../components/AddDoctorForm';
 import DoctorAppointmentsList from '../components/DoctorAppointmentsList';
 import BillGeneratorUpdated from '../components/BillGeneratorUpdated';
+import PatientBookAppointment from './PatientBookAppointment';
 
 
 function Dashboard() {
