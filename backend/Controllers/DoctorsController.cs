@@ -16,8 +16,7 @@ namespace HospitalManagementSystem.Controllers
         public DoctorsController(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+            _connectionString = _config.GetConnectionString("DefaultConnection") ?? "";
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)

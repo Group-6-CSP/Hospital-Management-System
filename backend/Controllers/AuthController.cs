@@ -20,8 +20,7 @@ namespace HospitalManagementSystem.Controllers
         {
             _config = config;
             _authService = new AuthService(config);
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+            _connectionString = _config.GetConnectionString("DefaultConnection");
         }
 
         // Registration API
