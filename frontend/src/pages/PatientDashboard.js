@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function PatientDashboard() {
+    const API_BASE = process.env.REACT_APP_API_BASE || '';
     const navigate = useNavigate();
     const [patientInfo, setPatientInfo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -11,15 +12,14 @@ function PatientDashboard() {
 
     useEffect(() => {
         const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-        
+
         if (!userInfo.email) {
             navigate('/login');
             return;
         }
 
-        // Fetch patient details if patientId exists
         if (patientId) {
-            axios.get(`http://localhost:5239/api/patients/${patientId}`)
+            axios.get(`${API_BASE}/api/patients/${patientId}`)
                 .then(res => {
                     setPatientInfo(res.data);
                     setLoading(false);
@@ -31,7 +31,7 @@ function PatientDashboard() {
         } else {
             setLoading(false);
         }
-    }, [navigate, patientId]);
+    }, [navigate, patientId, API_BASE]);
 
     const getGreeting = () => {
         const hour = new Date().getHours();

@@ -12,6 +12,8 @@ function RegisterPatient() {
     });
     const [message, setMessage] = useState("");
 
+    const API_BASE = process.env.REACT_APP_API_BASE || '';
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
@@ -27,7 +29,7 @@ function RegisterPatient() {
         if (formData.medicalNotes.length > 500) { setMessage("Medical Notes must be less than 500 characters"); return; }
 
         try {
-            const response = await fetch("http://localhost:5239/api/patients", {
+            const response = await fetch(`${API_BASE}/api/patients`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)

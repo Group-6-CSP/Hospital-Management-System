@@ -17,15 +17,17 @@ function UpdatePatient({ onPatientUpdate }) {
     const [message, setMessage] = useState("");
     const [messageType, setMessageType] = useState(""); // "success" or "error"
 
+    const API_BASE = process.env.REACT_APP_API_BASE || '';
+
     useEffect(() => {
-        fetch(`http://localhost:5239/api/patients/${id}`)
+        fetch(`${API_BASE}/api/patients/${id}`)
             .then((res) => res.json())
             .then((data) => setFormData(data))
             .catch((err) => {
                 setMessage("Error: " + err.message);
                 setMessageType("error");
             });
-    }, [id]);
+    }, [id, API_BASE]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -58,7 +60,7 @@ function UpdatePatient({ onPatientUpdate }) {
         }
 
         try {
-            const response = await fetch(`http://localhost:5239/api/patients/${id}`, {
+            const response = await fetch(`${API_BASE}/api/patients/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)

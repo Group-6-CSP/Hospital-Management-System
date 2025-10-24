@@ -2,19 +2,20 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 function PatientList() {
+    const API_BASE = process.env.REACT_APP_API_BASE || '';
     const [patients, setPatients] = useState([]);
 
     useEffect(() => {
-        fetch("http://localhost:5239/api/patients")
+        fetch(`${API_BASE}/api/patients`)
             .then(res => res.json())
             .then(data => setPatients(data))
             .catch(err => console.error("Error fetching patients:", err));
-    }, []);
+    }, [API_BASE]);
 
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this patient?")) {
             try {
-                const res = await fetch(`http://localhost:5239/api/patients/${id}`, { method: "DELETE" });
+                const res = await fetch(`${API_BASE}/api/patients/${id}`, { method: "DELETE" });
                 if (res.ok) setPatients(patients.filter(p => p.patientId !== id));
                 else {
                     const error = await res.json();

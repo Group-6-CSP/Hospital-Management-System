@@ -10,6 +10,8 @@ function RegisterAppointment() {
     });
     const [message, setMessage] = useState("");
 
+    const API_BASE = process.env.REACT_APP_API_BASE || '';
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
@@ -23,7 +25,7 @@ function RegisterAppointment() {
         if (!formData.department.trim()) { setMessage("Department is required"); return; }
 
         try {
-            const res = await fetch("http://localhost:5239/api/appointments", {
+            const res = await fetch(`${API_BASE}/api/appointments`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
@@ -103,9 +105,8 @@ function RegisterAppointment() {
 
                 {message && (
                     <p
-                        className={`mt-4 text-center font-medium ${
-                            message.startsWith("✅") ? "text-green-600" : "text-red-600"
-                        }`}
+                        className={`mt-4 text-center font-medium ${message.startsWith("✅") ? "text-green-600" : "text-red-600"
+                            }`}
                     >
                         {message}
                     </p>

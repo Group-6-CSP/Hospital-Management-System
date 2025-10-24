@@ -16,6 +16,8 @@ function Register() {
     const [message, setMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
+    const API_BASE = process.env.REACT_APP_API_BASE || '';
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
@@ -27,7 +29,7 @@ function Register() {
         setIsLoading(true);
 
         // Client-side validation
-        if (!formData.fullName || !formData.email || !formData.password || 
+        if (!formData.fullName || !formData.email || !formData.password ||
             !formData.contact || !formData.dob || !formData.gender) {
             setMessage("All fields are required");
             setIsLoading(false);
@@ -60,9 +62,9 @@ function Register() {
 
         try {
             console.log("Step 1: Registering user...");
-            
+
             // Step 1: Register user in Users table
-            const userResponse = await axios.post('http://localhost:5239/api/auth/register', {
+            const userResponse = await axios.post(`${API_BASE}/api/auth/register`, {
                 fullName: formData.fullName,
                 dob: formData.dob,
                 email: formData.email,
@@ -77,7 +79,7 @@ function Register() {
             console.log("Step 2: Creating patient record...");
 
             // Step 2: Create patient record in Patients table
-            const patientResponse = await axios.post('http://localhost:5239/api/patients', {
+            const patientResponse = await axios.post(`${API_BASE}/api/patients`, {
                 userId: userId,
                 name: formData.fullName,
                 email: formData.email,
@@ -96,13 +98,13 @@ function Register() {
 
         } catch (error) {
             console.error("Registration error:", error);
-            
+
             // Better error handling
             if (error.response) {
                 // Server responded with error
                 const errorMsg = error.response.data?.error || error.response.data?.message || "Registration failed";
                 setMessage(errorMsg);
-                
+
                 // Log detailed error for debugging
                 console.error("Server error:", error.response.data);
             } else if (error.request) {
@@ -251,9 +253,8 @@ function Register() {
                 </form>
 
                 {message && (
-                    <p className={`mt-4 text-center font-medium ${
-                        message.includes("successful") ? "text-green-600" : "text-red-600"
-                    }`}>
+                    <p className={`mt-4 text-center font-medium ${message.includes("successful") ? "text-green-600" : "text-red-600"
+                        }`}>
                         {message}
                     </p>
                 )}

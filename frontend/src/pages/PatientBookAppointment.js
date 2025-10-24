@@ -4,6 +4,7 @@ import axios from 'axios';
 import { bookAppointment } from '../services/appointmentService';
 
 function PatientBookAppointment() {
+    const API_BASE = process.env.REACT_APP_API_BASE || '';
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         doctorId: '',
@@ -27,15 +28,14 @@ function PatientBookAppointment() {
             return;
         }
 
-        axios.get('http://localhost:5239/api/doctors')
+        axios.get(`${API_BASE}/api/doctors`)
             .then(res => {
                 setDoctors(res.data);
-                // Extract unique departments
                 const uniqueDepts = [...new Set(res.data.map(d => d.department))];
                 setDepartments(uniqueDepts);
             })
             .catch(err => console.error('Error fetching doctors:', err));
-    }, [userInfo.email, navigate]);
+    }, [userInfo.email, navigate, API_BASE]);
 
     useEffect(() => {
         if (selectedDepartment) {
@@ -52,12 +52,12 @@ function PatientBookAppointment() {
 
     const handleDepartmentChange = (e) => {
         setSelectedDepartment(e.target.value);
-        setFormData({ ...formData, doctorId: '' }); // Reset doctor selection
+        setFormData({ ...formData, doctorId: '' });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!patientId) {
             setMessage('❌ Patient ID not found. Please complete your profile first.');
             return;
@@ -82,7 +82,7 @@ function PatientBookAppointment() {
 
             const result = await bookAppointment(appointmentData);
             setMessage(`✅ Appointment booked successfully! Your appointment ID is ${result.appointmentId}`);
-            
+
             setTimeout(() => {
                 navigate('/patient/my-appointments');
             }, 3000);
@@ -104,7 +104,6 @@ function PatientBookAppointment() {
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Department Selection */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Select Department <span className="text-red-500">*</span>
@@ -122,7 +121,6 @@ function PatientBookAppointment() {
                         </select>
                     </div>
 
-                    {/* Doctor Selection */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Select Doctor <span className="text-red-500">*</span>
@@ -146,7 +144,6 @@ function PatientBookAppointment() {
                         </select>
                     </div>
 
-                    {/* Date Selection */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Preferred Date <span className="text-red-500">*</span>
@@ -162,7 +159,6 @@ function PatientBookAppointment() {
                         />
                     </div>
 
-                    {/* Time Selection */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Preferred Time <span className="text-red-500">*</span>
@@ -190,7 +186,6 @@ function PatientBookAppointment() {
                         </select>
                     </div>
 
-                    {/* Reason */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Reason for Visit
@@ -205,7 +200,6 @@ function PatientBookAppointment() {
                         />
                     </div>
 
-                    {/* Submit Button */}
                     <button
                         type="submit"
                         disabled={loading || !formData.doctorId}
@@ -215,11 +209,9 @@ function PatientBookAppointment() {
                     </button>
                 </form>
 
-                {/* Message */}
                 {message && (
-                    <div className={`mt-6 p-4 rounded-lg text-center font-medium ${
-                        message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                    <div className={`mt-6 p-4 rounded-lg text-center font-medium ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
                         {message}
                     </div>
                 )}

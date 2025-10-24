@@ -1,7 +1,7 @@
 // JavaScript source code
 import axios from "axios";
 
-const API_URL = "/api/auth"; // Backend URL
+const API_URL = "https://hospital-backend-app-d5hzfjfqfbakbdcu.southeastasia-01.azurewebsites.net/api/auth"; // Backend URL
 
 // Register API call
 export const registerUser = async (userData) => {

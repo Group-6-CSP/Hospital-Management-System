@@ -17,14 +17,16 @@ function BookAppointment() {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const API_BASE = process.env.REACT_APP_API_BASE || '';
+
     useEffect(() => {
         // Fetch doctors
-        axios.get('http://localhost:5239/api/doctors')
+        axios.get(`${API_BASE}/api/doctors`)
             .then(res => setDoctors(res.data))
             .catch(err => console.error('Error fetching doctors:', err));
 
         // Fetch patients
-        axios.get('http://localhost:5239/api/patients')
+        axios.get(`${API_BASE}/api/patients`)
             .then(res => setPatients(res.data))
             .catch(err => console.error('Error fetching patients:', err));
     }, []);
@@ -157,9 +159,8 @@ function BookAppointment() {
 
                 {/* Message */}
                 {message && (
-                    <div className={`mt-6 p-4 rounded-lg text-center font-medium ${
-                        message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                    <div className={`mt-6 p-4 rounded-lg text-center font-medium ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
                         {message}
                     </div>
                 )}

@@ -8,6 +8,7 @@ function PatientProfile() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
 
+    const API_BASE = process.env.REACT_APP_API_BASE || '';
     const patientId = localStorage.getItem('patientId');
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -24,7 +25,7 @@ function PatientProfile() {
         }
 
         // Fetch patient details
-        axios.get(`http://localhost:5239/api/patients/${patientId}`)
+        axios.get(`${API_BASE}/api/patients/${patientId}`)
             .then(res => {
                 setPatient(res.data);
                 setLoading(false);
@@ -34,7 +35,7 @@ function PatientProfile() {
                 setMessage('Failed to load profile');
                 setLoading(false);
             });
-    }, [patientId, userInfo.email, navigate]);
+    }, [patientId, userInfo.email, navigate, API_BASE]);
 
     if (loading) {
         return (
