@@ -13,7 +13,7 @@ namespace HospitalManagementSystem.Services
 
         public AuthService(IConfiguration config)
         {
-            _config = config;
+            _config = config; 
         }
 
         public string HashPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password);
