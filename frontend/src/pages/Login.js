@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from 'axios';
 
 function Login() {
+  const API_BASE = process.env.REACT_APP_API_BASE || '';
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/patient/dashboard';
@@ -26,7 +27,7 @@ function Login() {
     }
 
     try {
-      const response = await axios.post('http://localhost:5239/api/auth/login', credentials);
+      const response = await axios.post(`${API_BASE}/api/auth/login`, credentials);
       
       localStorage.setItem('user', JSON.stringify({
         email: credentials.email,
@@ -36,7 +37,7 @@ function Login() {
 
       if (response.data.role === 'Patient') {
         try {
-          const patientsRes = await axios.get('http://localhost:5239/api/patients');
+          const patientsRes = await axios.get(`${API_BASE}/api/patients`);
           const patient = patientsRes.data.find(p => p.email === credentials.email);
           if (patient) {
             localStorage.setItem('patientId', patient.patientId);

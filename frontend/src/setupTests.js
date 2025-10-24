@@ -3,3 +3,12 @@
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
+
+// Global axios mock to avoid ESM parsing issues in CRA 5/Jest
+jest.mock('axios', () => ({
+	create: jest.fn(() => ({ get: jest.fn(), post: jest.fn(), put: jest.fn(), delete: jest.fn() })),
+	get: jest.fn(),
+	post: jest.fn(),
+	put: jest.fn(),
+	delete: jest.fn()
+}));

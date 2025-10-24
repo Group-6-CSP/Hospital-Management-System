@@ -18,7 +18,8 @@ namespace HospitalManagementSystem.Controllers
         {
             _config = config;
             // Ensure we never have a null connection string
-            _connectionString = _config.GetConnectionString("DefaultConnection") ?? "";
+            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
+                                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         // Utility: Safe string from reader (always returns string, never null)

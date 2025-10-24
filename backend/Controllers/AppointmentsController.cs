@@ -18,7 +18,8 @@ namespace HospitalManagementSystem.Controllers
         public AppointmentsController(IConfiguration config)
         {
             _config = config;
-            _connectionString = _config.GetConnectionString("DefaultConnection") ?? "";
+            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
+                                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         // Utility methods

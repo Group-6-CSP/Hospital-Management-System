@@ -1,0 +1,41 @@
+name: Build and Deploy Backend to Azure App Service
+
+on:
+  push:
+    branches:
+      - feature/appointment
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: hospital-backend-app
+  AZURE_WEBAPP_PACKAGE_PATH: './backend/publish'
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore backend/backend.csproj
+
+    - name: Build
+      run: dotnet build backend/backend.csproj --configuration Release --no-restore
+
+    - name: Publish
+      run: dotnet publish backend/backend.csproj --configuration Release --output backend/publish
+
+    - name: Deploy to Azure WebApp using Publish Profile
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}

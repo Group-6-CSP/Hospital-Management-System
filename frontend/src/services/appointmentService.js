@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5239/api/appointments';
+// Prefer env-configured base URL when present (set by runner during E2E),
+// otherwise fall back to CRA proxy or relative path.
+const API_BASE = process.env.REACT_APP_API_BASE || '';
+const API_URL = `${API_BASE}/api/appointments`;
 
 export const bookAppointment = async (appointmentData) => {
     try {
