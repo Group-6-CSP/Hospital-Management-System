@@ -148,14 +148,14 @@ namespace HospitalManagementSystem.Controllers
 
                 var user = new User
                 {
-                    UserId = reader["UserId"].ToString(),
-                    FullName = reader["FullName"].ToString(),
-                    DOB = Convert.ToDateTime(reader["DOB"]),
-                    Email = reader["Email"].ToString(),
-                    PasswordHash = reader["PasswordHash"].ToString(),
-                    Contact = reader["Contact"].ToString(),
-                    Role = reader["Role"].ToString(),
-                    IsActive = Convert.ToBoolean(reader["IsActive"])
+                    UserId = reader["UserId"] == DBNull.Value ? string.Empty : reader["UserId"].ToString(),
+                    FullName = reader["FullName"] == DBNull.Value ? string.Empty : reader["FullName"].ToString(),
+                    DOB = DateTime.TryParse(reader["DOB"] == DBNull.Value ? null : reader["DOB"].ToString(), out DateTime _dob) ? _dob : DateTime.MinValue,
+                    Email = reader["Email"] == DBNull.Value ? string.Empty : reader["Email"].ToString(),
+                    PasswordHash = reader["PasswordHash"] == DBNull.Value ? string.Empty : reader["PasswordHash"].ToString(),
+                    Contact = reader["Contact"] == DBNull.Value ? string.Empty : reader["Contact"].ToString(),
+                    Role = reader["Role"] == DBNull.Value ? string.Empty : reader["Role"].ToString(),
+                    IsActive = reader["IsActive"] == DBNull.Value ? false : Convert.ToBoolean(reader["IsActive"])
                 };
 
                 // Verify password
