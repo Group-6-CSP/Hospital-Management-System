@@ -184,7 +184,7 @@
 //             var cmd = new MySqlCommand(
 //                 "SELECT COALESCE(MAX(CAST(SUBSTRING(DoctorId, 3) AS UNSIGNED)), 0) + 1 AS NextId FROM Doctors",
 //                 connection);
-            
+
 //             var result = cmd.ExecuteScalar();
 //             int nextNum = Convert.ToInt32(result);
 //             return "D-" + nextNum.ToString("D4");
@@ -210,8 +210,11 @@ namespace HospitalManagementSystem.Services
         {
             _config = config;
             _authService = new AuthService(config);
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            //  Correct Azure + Local fallback method
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -410,7 +413,7 @@ namespace HospitalManagementSystem.Services
             var cmd = new MySqlCommand(
                 "SELECT COALESCE(MAX(CAST(SUBSTRING(DoctorId, 3) AS UNSIGNED)), 0) + 1 AS NextId FROM Doctors",
                 connection);
-            
+
             var result = cmd.ExecuteScalar();
             int nextNum = Convert.ToInt32(result);
             return "D-" + nextNum.ToString("D4");

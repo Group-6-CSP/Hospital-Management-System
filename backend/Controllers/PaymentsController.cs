@@ -201,8 +201,9 @@ namespace HospitalManagementSystem.Controllers
         public PaymentsController(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -220,10 +221,7 @@ namespace HospitalManagementSystem.Controllers
             return reader[columnName] == DBNull.Value ? 0 : Convert.ToDecimal(reader[columnName]);
         }
 
-        // =====================================================
-        // ADDED: POST /api/payments/record
-        // Record a payment for a bill
-        // =====================================================
+        // POST /api/payments/record
         [HttpPost("record")]
         public IActionResult RecordPayment([FromBody] RecordPaymentRequest request)
         {
@@ -285,7 +283,7 @@ namespace HospitalManagementSystem.Controllers
                 }
 
                 if (payments.Count == 0)
-                    return Ok(new List<object>()); // Return empty list instead of 404
+                    return Ok(new List<object>());
 
                 return Ok(payments);
             }
@@ -296,7 +294,6 @@ namespace HospitalManagementSystem.Controllers
         }
 
         // GET /api/payments/all
-        // Get all payments (admin only)
         [HttpGet("all")]
         public IActionResult GetAllPayments()
         {
@@ -306,7 +303,7 @@ namespace HospitalManagementSystem.Controllers
                 var payments = service.GetAllPayments();
 
                 if (payments.Count == 0)
-                    return Ok(new List<object>()); // Return empty list
+                    return Ok(new List<object>());
 
                 return Ok(new { data = payments });
             }

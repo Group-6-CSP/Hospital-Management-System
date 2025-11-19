@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_BASE || '';
+const API_BASE =
+    process.env.REACT_APP_API_BASE ||
+    "https://hospital-backend-app-d5hzfjfqfbakbdcu.southeastasia-01.azurewebsites.net";
+
 const DOCTORS_URL = `${API_BASE}/api/doctors`;
 const REPORTS_URL = `${API_BASE}/api/reports`;
 

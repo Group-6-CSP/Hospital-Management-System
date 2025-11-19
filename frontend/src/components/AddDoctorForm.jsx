@@ -208,6 +208,10 @@ import axios from 'axios';
 import { getAllDepartments } from '../services/departmentService';
 
 function AddDoctorForm({ onSuccess }) {
+
+    // ✅ Added API_BASE for Azure deployment
+    const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5239";
+
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -251,22 +255,41 @@ function AddDoctorForm({ onSuccess }) {
         }
 
         try {
-            const response = await axios.post('http://localhost:5239/api/doctors/create-account', {
-                name: formData.name,
-                email: formData.email,
-                password: formData.password,
-                contact: formData.contact,
-                specialization: formData.specialization,
-                departmentId: formData.departmentId,
-                availability: formData.availability
+            // 🔥 FIX: using API_BASE instead of localhost
+            const response = await axios.post(
+                `${API_BASE}/api/doctors/create-account`,
+                {
+                    name: formData.name,
+                    email: formData.email,
+                    password: formData.password,
+                    contact: formData.contact,
+                    specialization: formData.specialization,
+                    departmentId: formData.departmentId,
+                    availability: formData.availability
+                }
+            );
+
+            setMessage(
+                `✅ Doctor account created successfully!
+Doctor ID: ${response.data.doctorId}
+Email: ${response.data.loginEmail}
+Password: ${response.data.loginPassword}`
+            );
+
+            setFormData({
+                name: '',
+                email: '',
+                password: '',
+                contact: '',
+                specialization: '',
+                departmentId: '',
+                availability: ''
             });
 
-            setMessage(`✅ Doctor account created successfully!\nDoctor ID: ${response.data.doctorId}\nEmail: ${response.data.loginEmail}\nPassword: ${response.data.loginPassword}`);
-            setFormData({ name: '', email: '', password: '', contact: '', specialization: '', departmentId: '', availability: '' });
-            
             setTimeout(() => {
                 if (onSuccess) onSuccess();
             }, 2000);
+
         } catch (error) {
             setMessage(`❌ ${error.response?.data?.error || 'Failed to create doctor account'}`);
         } finally {
@@ -279,7 +302,9 @@ function AddDoctorForm({ onSuccess }) {
             <h2 className="text-2xl font-bold text-blue-600 mb-6">Add Doctor Account</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+
                 <div className="grid grid-cols-2 gap-4">
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                         <input
@@ -292,6 +317,7 @@ function AddDoctorForm({ onSuccess }) {
                             required
                         />
                     </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                         <input
@@ -304,9 +330,11 @@ function AddDoctorForm({ onSuccess }) {
                             required
                         />
                     </div>
+
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
                         <div className="relative">
@@ -328,6 +356,7 @@ function AddDoctorForm({ onSuccess }) {
                             </button>
                         </div>
                     </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Contact (10 digits) *</label>
                         <input
@@ -341,9 +370,11 @@ function AddDoctorForm({ onSuccess }) {
                             required
                         />
                     </div>
+
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Specialization *</label>
                         <input
@@ -356,6 +387,7 @@ function AddDoctorForm({ onSuccess }) {
                             required
                         />
                     </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
                         <select
@@ -373,6 +405,7 @@ function AddDoctorForm({ onSuccess }) {
                             ))}
                         </select>
                     </div>
+
                 </div>
 
                 <div>
@@ -394,15 +427,16 @@ function AddDoctorForm({ onSuccess }) {
                 >
                     {loading ? 'Creating Account...' : 'Create Doctor Account'}
                 </button>
+
             </form>
 
             {message && (
-                <div className={`mt-6 p-4 rounded-lg whitespace-pre-line ${
-                    message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
+                <div className={`mt-6 p-4 rounded-lg whitespace-pre-line ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
                     {message}
                 </div>
             )}
+
         </div>
     );
 }

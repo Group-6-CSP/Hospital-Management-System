@@ -39,13 +39,11 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Cors;
 
 namespace HospitalManagementSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[EnableCors("AllowAll")]  // Add this line
     public class DepartmentsController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -54,8 +52,11 @@ namespace HospitalManagementSystem.Controllers
         public DepartmentsController(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            //  Azure uses ConnectionStrings__DefaultConnection
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -74,7 +75,7 @@ namespace HospitalManagementSystem.Controllers
                 var cmd = new MySqlCommand(
                     "SELECT DepartmentId, DepartmentName, Description FROM Departments ORDER BY DepartmentName ASC",
                     connection);
-                
+
                 var reader = cmd.ExecuteReader();
                 var departments = new List<object>();
 

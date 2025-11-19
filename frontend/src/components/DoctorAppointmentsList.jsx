@@ -11,6 +11,7 @@ function DoctorAppointmentsList() {
     const [selectedStatus, setSelectedStatus] = useState('');
 
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5239";
 
     useEffect(() => {
         fetchAppointments();
@@ -19,11 +20,9 @@ function DoctorAppointmentsList() {
     const fetchAppointments = async () => {
         try {
             const doctorEmail = userInfo.email;
-            const response = await axios.get('http://localhost:5239/api/appointments');
+            const response = await axios.get(`${API_BASE}/api/appointments`);
             const allAppointments = response.data.data || [];
 
-            // Get doctor ID from email (you may need to fetch this separately)
-            // For now, filtering by email if available
             setAppointments(allAppointments);
             setFilteredAppointments(allAppointments);
             setLoading(false);
@@ -35,9 +34,10 @@ function DoctorAppointmentsList() {
 
     const handleStatusChange = async (appointmentId, newStatus) => {
         try {
-            await axios.put(`http://localhost:5239/api/appointments/${appointmentId}/status`, {
-                status: newStatus
-            });
+            await axios.put(
+                `${API_BASE}/api/appointments/${appointmentId}/status`,
+                { status: newStatus }
+            );
 
             setMessage(`Status updated to ${newStatus}`);
             fetchAppointments();
@@ -50,10 +50,14 @@ function DoctorAppointmentsList() {
         let filtered = appointments;
 
         if (fromDate) {
-            filtered = filtered.filter(apt => new Date(apt.appointmentDate) >= new Date(fromDate));
+            filtered = filtered.filter(apt =>
+                new Date(apt.appointmentDate) >= new Date(fromDate)
+            );
         }
         if (toDate) {
-            filtered = filtered.filter(apt => new Date(apt.appointmentDate) <= new Date(toDate));
+            filtered = filtered.filter(apt =>
+                new Date(apt.appointmentDate) <= new Date(toDate)
+            );
         }
 
         setFilteredAppointments(filtered);
@@ -105,7 +109,10 @@ function DoctorAppointmentsList() {
             <div className="space-y-4">
                 {filteredAppointments.length > 0 ? (
                     filteredAppointments.map(apt => (
-                        <div key={apt.appointmentId} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                        <div
+                            key={apt.appointmentId}
+                            className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition"
+                        >
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <p className="text-sm text-gray-600">Patient Name</p>
@@ -115,13 +122,17 @@ function DoctorAppointmentsList() {
                                     <p className="text-sm text-gray-600">Status</p>
                                     <select
                                         value={apt.status}
-                                        onChange={(e) => handleStatusChange(apt.appointmentId, e.target.value)}
-                                        className={`px-3 py-1 rounded text-sm font-semibold border-none cursor-pointer ${
-                                            apt.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-700' :
-                                            apt.status === 'Accepted' ? 'bg-blue-100 text-blue-700' :
-                                            apt.status === 'In-Progress' ? 'bg-purple-100 text-purple-700' :
-                                            'bg-green-100 text-green-700'
-                                        }`}
+                                        onChange={(e) =>
+                                            handleStatusChange(apt.appointmentId, e.target.value)
+                                        }
+                                        className={`px-3 py-1 rounded text-sm font-semibold border-none cursor-pointer ${apt.status === 'Scheduled'
+                                                ? 'bg-yellow-100 text-yellow-700'
+                                                : apt.status === 'Accepted'
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : apt.status === 'In-Progress'
+                                                        ? 'bg-purple-100 text-purple-700'
+                                                        : 'bg-green-100 text-green-700'
+                                            }`}
                                     >
                                         <option value="Scheduled">Scheduled</option>
                                         <option value="Accepted">Accepted</option>
@@ -142,7 +153,9 @@ function DoctorAppointmentsList() {
                                 </div>
                                 <div>
                                     <p className="text-gray-600">Date & Time</p>
-                                    <p className="font-medium">{apt.appointmentDate} at {apt.appointmentTime}</p>
+                                    <p className="font-medium">
+                                        {apt.appointmentDate} at {apt.appointmentTime}
+                                    </p>
                                 </div>
                                 <div>
                                     <p className="text-gray-600">Reason</p>

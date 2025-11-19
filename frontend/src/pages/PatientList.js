@@ -103,7 +103,9 @@ function PatientList() {
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
-    const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+
+    // ✔ Correct API base
+    const API_BASE = process.env.REACT_APP_API_BASE || "";
 
     useEffect(() => {
         fetchPatients();
@@ -157,9 +159,8 @@ function PatientList() {
                 </div>
 
                 {message && (
-                    <div className={`mb-6 p-4 rounded-lg text-center font-medium ${
-                        message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                    <div className={`mb-6 p-4 rounded-lg text-center font-medium ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
                         {message}
                     </div>
                 )}

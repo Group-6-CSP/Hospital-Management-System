@@ -14,8 +14,11 @@ namespace HospitalManagementSystem.Services
         public DepartmentService(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            // FIXED for Azure connection string handling
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -29,8 +32,12 @@ namespace HospitalManagementSystem.Services
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
 
-            var cmd = new MySqlCommand("SELECT * FROM Departments ORDER BY DepartmentName ASC", connection);
-            var reader = cmd.ExecuteReader();
+            var cmd = new MySqlCommand(
+                "SELECT * FROM Departments ORDER BY DepartmentName ASC",
+                connection
+            );
+
+            using var reader = cmd.ExecuteReader();
             var departments = new List<Department>();
 
             while (reader.Read())
@@ -45,6 +52,5 @@ namespace HospitalManagementSystem.Services
 
             return departments;
         }
-        
     }
 }

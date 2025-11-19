@@ -16,8 +16,11 @@ namespace HospitalManagementSystem.Services
         public DoctorService(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            // FIXED for Azure
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -28,10 +31,13 @@ namespace HospitalManagementSystem.Services
         // Create Doctor
         public string CreateDoctor(CreateDoctorRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Name) || !System.Text.RegularExpressions.Regex.IsMatch(request.Name, @"^[a-zA-Z\s]+$"))
+            if (string.IsNullOrWhiteSpace(request.Name) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(request.Name, @"^[a-zA-Z\s]+$"))
                 throw new Exception("Name must contain only alphabets");
 
-            if (string.IsNullOrWhiteSpace(request.Contact) || request.Contact.Length != 10 || !System.Text.RegularExpressions.Regex.IsMatch(request.Contact, @"^\d{10}$"))
+            if (string.IsNullOrWhiteSpace(request.Contact) ||
+                request.Contact.Length != 10 ||
+                !System.Text.RegularExpressions.Regex.IsMatch(request.Contact, @"^\d{10}$"))
                 throw new Exception("Contact must be 10 digits");
 
             if (string.IsNullOrWhiteSpace(request.Specialization))
@@ -40,6 +46,7 @@ namespace HospitalManagementSystem.Services
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
 
+            // Check contact existence
             var checkCmd = new MySqlCommand("SELECT COUNT(*) FROM Doctors WHERE Contact=@Contact", connection);
             checkCmd.Parameters.AddWithValue("@Contact", request.Contact);
             long count = Convert.ToInt64(checkCmd.ExecuteScalar());
@@ -47,8 +54,10 @@ namespace HospitalManagementSystem.Services
             if (count > 0)
                 throw new Exception("Contact already exists");
 
+            // Generate Doctor ID
             string doctorId = GenerateDoctorId(connection);
 
+            // Insert doctor
             var insertCmd = new MySqlCommand(
                 @"INSERT INTO Doctors (DoctorId, Name, Specialization, Contact, Email, Availability, IsActive, CreatedAt)
                   VALUES (@DoctorId, @Name, @Specialization, @Contact, @Email, @Availability, @IsActive, @CreatedAt)",
@@ -61,7 +70,7 @@ namespace HospitalManagementSystem.Services
             insertCmd.Parameters.AddWithValue("@Email", request.Email ?? "");
             insertCmd.Parameters.AddWithValue("@Availability", request.Availability ?? "");
             insertCmd.Parameters.AddWithValue("@IsActive", true);
-            insertCmd.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
+            insertCmd.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
 
             insertCmd.ExecuteNonQuery();
 
@@ -83,6 +92,7 @@ namespace HospitalManagementSystem.Services
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
 
+            // Check doctor exists
             var checkCmd = new MySqlCommand("SELECT COUNT(*) FROM Doctors WHERE DoctorId=@DoctorId", connection);
             checkCmd.Parameters.AddWithValue("@DoctorId", doctorId);
             long count = Convert.ToInt64(checkCmd.ExecuteScalar());
@@ -90,6 +100,7 @@ namespace HospitalManagementSystem.Services
             if (count == 0)
                 throw new Exception("Doctor not found");
 
+            // Check if schedule exists
             var checkScheduleCmd = new MySqlCommand("SELECT COUNT(*) FROM DoctorSchedule WHERE DoctorId=@DoctorId", connection);
             checkScheduleCmd.Parameters.AddWithValue("@DoctorId", doctorId);
             long scheduleExists = Convert.ToInt64(checkScheduleCmd.ExecuteScalar());
@@ -97,13 +108,14 @@ namespace HospitalManagementSystem.Services
             if (scheduleExists > 0)
             {
                 var updateCmd = new MySqlCommand(
-                    @"UPDATE DoctorSchedule SET WorkingDays=@WorkingDays, TimeSlots=@TimeSlots, UpdatedAt=@UpdatedAt 
+                    @"UPDATE DoctorSchedule 
+                      SET WorkingDays=@WorkingDays, TimeSlots=@TimeSlots, UpdatedAt=@UpdatedAt 
                       WHERE DoctorId=@DoctorId",
                     connection);
 
                 updateCmd.Parameters.AddWithValue("@WorkingDays", workingDaysJson);
                 updateCmd.Parameters.AddWithValue("@TimeSlots", timeSlotsJson);
-                updateCmd.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
+                updateCmd.Parameters.AddWithValue("@UpdatedAt", DateTime.UtcNow);
                 updateCmd.Parameters.AddWithValue("@DoctorId", doctorId);
 
                 updateCmd.ExecuteNonQuery();
@@ -121,7 +133,7 @@ namespace HospitalManagementSystem.Services
                 insertCmd.Parameters.AddWithValue("@DoctorId", doctorId);
                 insertCmd.Parameters.AddWithValue("@WorkingDays", workingDaysJson);
                 insertCmd.Parameters.AddWithValue("@TimeSlots", timeSlotsJson);
-                insertCmd.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
+                insertCmd.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
 
                 insertCmd.ExecuteNonQuery();
             }
@@ -133,9 +145,13 @@ namespace HospitalManagementSystem.Services
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
 
-            var cmd = new MySqlCommand("SELECT * FROM DoctorSchedule WHERE DoctorId=@DoctorId", connection);
+            var cmd = new MySqlCommand(
+                "SELECT * FROM DoctorSchedule WHERE DoctorId=@DoctorId",
+                connection);
+
             cmd.Parameters.AddWithValue("@DoctorId", doctorId);
-            var reader = cmd.ExecuteReader();
+
+            using var reader = cmd.ExecuteReader();
 
             if (reader.Read())
             {
@@ -157,19 +173,23 @@ namespace HospitalManagementSystem.Services
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
 
+            // Check for active appointments
             var checkCmd = new MySqlCommand(
                 "SELECT COUNT(*) FROM Appointments WHERE DoctorId=@DoctorId AND Status NOT IN ('Cancelled', 'Completed')",
                 connection);
+
             checkCmd.Parameters.AddWithValue("@DoctorId", doctorId);
             long appointmentCount = Convert.ToInt64(checkCmd.ExecuteScalar());
 
             if (appointmentCount > 0)
                 throw new Exception("Doctor has scheduled appointments and cannot be deleted");
 
+            // Delete doctor
             var deleteCmd = new MySqlCommand("DELETE FROM Doctors WHERE DoctorId=@DoctorId", connection);
             deleteCmd.Parameters.AddWithValue("@DoctorId", doctorId);
             deleteCmd.ExecuteNonQuery();
 
+            // Delete schedule
             var deleteScheduleCmd = new MySqlCommand("DELETE FROM DoctorSchedule WHERE DoctorId=@DoctorId", connection);
             deleteScheduleCmd.Parameters.AddWithValue("@DoctorId", doctorId);
             deleteScheduleCmd.ExecuteNonQuery();

@@ -56,13 +56,12 @@ namespace HospitalManagementSystem.Controllers
     [Route("api/[controller]")]
     public class AdminController : ControllerBase
     {
-        private readonly IConfiguration _config;
         private readonly AdminDoctorService _adminDoctorService;
 
-        public AdminController(IConfiguration config)
+        //  FIXED: Use proper DI injection
+        public AdminController(AdminDoctorService adminDoctorService)
         {
-            _config = config;
-            _adminDoctorService = new AdminDoctorService(config);
+            _adminDoctorService = adminDoctorService;
         }
 
         [HttpPost("create-doctor-account")]

@@ -15,8 +15,11 @@ namespace HospitalManagementSystem.Services
         public AppointmentManagementService(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            // FIXED for Azure compatibility
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -26,7 +29,9 @@ namespace HospitalManagementSystem.Services
 
         private DateTime SafeGetDateTime(MySqlDataReader reader, string columnName)
         {
-            return reader[columnName] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader[columnName]);
+            return reader[columnName] == DBNull.Value
+                ? DateTime.MinValue
+                : Convert.ToDateTime(reader[columnName]);
         }
 
         // Get Doctor's Appointments (filtered by date)

@@ -15,8 +15,11 @@ namespace HospitalManagementSystem.Services
         public BillingService(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            // FIXED for Azure
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -26,12 +29,16 @@ namespace HospitalManagementSystem.Services
 
         private DateTime SafeGetDateTime(MySqlDataReader reader, string columnName)
         {
-            return reader[columnName] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader[columnName]);
+            return reader[columnName] == DBNull.Value
+                ? DateTime.MinValue
+                : Convert.ToDateTime(reader[columnName]);
         }
 
         private decimal SafeGetDecimal(MySqlDataReader reader, string columnName)
         {
-            return reader[columnName] == DBNull.Value ? 0 : Convert.ToDecimal(reader[columnName]);
+            return reader[columnName] == DBNull.Value
+                ? 0
+                : Convert.ToDecimal(reader[columnName]);
         }
 
         // Get billing configuration
@@ -41,7 +48,7 @@ namespace HospitalManagementSystem.Services
             connection.Open();
 
             var cmd = new MySqlCommand("SELECT * FROM BillingConfig LIMIT 1", connection);
-            var reader = cmd.ExecuteReader();
+            using var reader = cmd.ExecuteReader();
 
             if (reader.Read())
             {
@@ -54,7 +61,6 @@ namespace HospitalManagementSystem.Services
                 };
             }
 
-            // Default config if not found
             return new BillingConfig { TaxPercentage = 6, ConsultationFeeBase = 1000 };
         }
 
@@ -67,15 +73,13 @@ namespace HospitalManagementSystem.Services
             var cmd = new MySqlCommand(
                 "SELECT ConsultationFee FROM DoctorFees WHERE DoctorId=@DoctorId ORDER BY EffectiveFrom DESC LIMIT 1",
                 connection);
+
             cmd.Parameters.AddWithValue("@DoctorId", doctorId);
 
             var result = cmd.ExecuteScalar();
             if (result != null)
-            {
                 return Convert.ToDecimal(result);
-            }
 
-            // Fall back to base config
             return GetBillingConfig().ConsultationFeeBase;
         }
 
@@ -85,11 +89,13 @@ namespace HospitalManagementSystem.Services
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
 
-            // Validate appointment exists
+            // Validate appointment
             var aptCmd = new MySqlCommand(
                 "SELECT * FROM Appointments WHERE AppointmentId=@AppointmentId", connection);
+
             aptCmd.Parameters.AddWithValue("@AppointmentId", request.AppointmentId);
-            var aptReader = aptCmd.ExecuteReader();
+
+            using var aptReader = aptCmd.ExecuteReader();
 
             if (!aptReader.Read())
                 throw new Exception("Appointment not found");
@@ -102,32 +108,29 @@ namespace HospitalManagementSystem.Services
             if (status != "Completed")
                 throw new Exception("Bill can only be generated for completed appointments");
 
-            aptReader.Close();
+            // Reader closes here (end of using block)
 
-            // Check if bill already exists
+            // Check existing bill
             var billCheckCmd = new MySqlCommand(
                 "SELECT COUNT(*) FROM Bills WHERE AppointmentId=@AppointmentId", connection);
+
             billCheckCmd.Parameters.AddWithValue("@AppointmentId", appointmentId);
             long billExists = Convert.ToInt64(billCheckCmd.ExecuteScalar());
 
             if (billExists > 0)
                 throw new Exception("Bill already exists for this appointment");
 
-            // Get consultation fee
+            // Fee calculations
             decimal consultationFee = GetConsultationFee(doctorId);
             decimal subtotal = consultationFee + request.LabCharges + request.MedicineCharges;
 
-            // Calculate discount
             decimal discountAmount = (subtotal * request.DiscountPercent) / 100;
 
-            // Get tax percentage
             BillingConfig config = GetBillingConfig();
             decimal taxAmount = ((subtotal - discountAmount) * config.TaxPercentage) / 100;
 
-            // Calculate total
             decimal totalAmount = subtotal - discountAmount + taxAmount;
 
-            // Generate bill ID
             string billId = GenerateBillId(connection);
 
             // Insert bill
@@ -137,7 +140,8 @@ namespace HospitalManagementSystem.Services
                   Status, BillDate, Notes, CreatedAt)
                   VALUES (@BillId, @AppointmentId, @PatientId, @DoctorId, @ConsultationFee, @LabCharges, 
                   @MedicineCharges, @Subtotal, @DiscountPercent, @DiscountAmount, @TaxPercent, @TaxAmount, 
-                  @TotalAmount, @Status, @BillDate, @Notes, @CreatedAt)", connection);
+                  @TotalAmount, @Status, @BillDate, @Notes, @CreatedAt)",
+                connection);
 
             insertCmd.Parameters.AddWithValue("@BillId", billId);
             insertCmd.Parameters.AddWithValue("@AppointmentId", appointmentId);
@@ -153,15 +157,17 @@ namespace HospitalManagementSystem.Services
             insertCmd.Parameters.AddWithValue("@TaxAmount", taxAmount);
             insertCmd.Parameters.AddWithValue("@TotalAmount", totalAmount);
             insertCmd.Parameters.AddWithValue("@Status", "Generated");
-            insertCmd.Parameters.AddWithValue("@BillDate", DateTime.Now);
+            insertCmd.Parameters.AddWithValue("@BillDate", DateTime.UtcNow);
             insertCmd.Parameters.AddWithValue("@Notes", request.Notes ?? "");
-            insertCmd.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
+            insertCmd.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
 
             insertCmd.ExecuteNonQuery();
 
-            // Update appointment with bill ID
+            // Update appointment
             var updateAptCmd = new MySqlCommand(
-                "UPDATE Appointments SET BillId=@BillId WHERE AppointmentId=@AppointmentId", connection);
+                "UPDATE Appointments SET BillId=@BillId WHERE AppointmentId=@AppointmentId",
+                connection);
+
             updateAptCmd.Parameters.AddWithValue("@BillId", billId);
             updateAptCmd.Parameters.AddWithValue("@AppointmentId", appointmentId);
             updateAptCmd.ExecuteNonQuery();
@@ -182,12 +188,11 @@ namespace HospitalManagementSystem.Services
                 TaxAmount = taxAmount,
                 TotalAmount = totalAmount,
                 Status = "Generated",
-                BillDate = DateTime.Now.ToString("yyyy-MM-dd"),
+                BillDate = DateTime.UtcNow.ToString("yyyy-MM-dd"),
                 Message = "Bill generated successfully"
             };
         }
 
-        // Get bill by ID
         public Bill GetBillById(string billId)
         {
             using var connection = new MySqlConnection(_connectionString);
@@ -195,7 +200,8 @@ namespace HospitalManagementSystem.Services
 
             var cmd = new MySqlCommand("SELECT * FROM Bills WHERE BillId=@BillId", connection);
             cmd.Parameters.AddWithValue("@BillId", billId);
-            var reader = cmd.ExecuteReader();
+
+            using var reader = cmd.ExecuteReader();
 
             if (reader.Read())
             {
@@ -223,7 +229,6 @@ namespace HospitalManagementSystem.Services
             return null;
         }
 
-        // Get bills by patient
         public List<object> GetBillsByPatient(string patientId)
         {
             using var connection = new MySqlConnection(_connectionString);
@@ -233,10 +238,12 @@ namespace HospitalManagementSystem.Services
                 @"SELECT b.*, d.Name as DoctorName FROM Bills b 
                   LEFT JOIN Doctors d ON b.DoctorId = d.DoctorId 
                   WHERE b.PatientId=@PatientId 
-                  ORDER BY b.BillDate DESC", connection);
+                  ORDER BY b.BillDate DESC",
+                connection);
+
             cmd.Parameters.AddWithValue("@PatientId", patientId);
 
-            var reader = cmd.ExecuteReader();
+            using var reader = cmd.ExecuteReader();
             var bills = new List<object>();
 
             while (reader.Read())
@@ -255,7 +262,6 @@ namespace HospitalManagementSystem.Services
             return bills;
         }
 
-        // Get all bills
         public List<object> GetAllBills(string status = "", string from = "", string to = "")
         {
             using var connection = new MySqlConnection(_connectionString);
@@ -273,7 +279,8 @@ namespace HospitalManagementSystem.Services
                 $@"SELECT b.*, p.Name as PatientName, d.Name as DoctorName FROM Bills b
                    LEFT JOIN Patients p ON b.PatientId = p.PatientId
                    LEFT JOIN Doctors d ON b.DoctorId = d.DoctorId
-                   {whereClause} ORDER BY b.BillDate DESC", connection);
+                   {whereClause} ORDER BY b.BillDate DESC",
+                connection);
 
             if (!string.IsNullOrEmpty(status))
                 cmd.Parameters.AddWithValue("@Status", status);
@@ -282,7 +289,7 @@ namespace HospitalManagementSystem.Services
             if (!string.IsNullOrEmpty(to))
                 cmd.Parameters.AddWithValue("@ToDate", DateTime.Parse(to));
 
-            var reader = cmd.ExecuteReader();
+            using var reader = cmd.ExecuteReader();
             var bills = new List<object>();
 
             while (reader.Read())
@@ -317,19 +324,20 @@ namespace HospitalManagementSystem.Services
             return "B-00000001";
         }
 
-        // Update billing config
         public void UpdateBillingConfig(BillingConfigRequest request)
         {
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
 
             var cmd = new MySqlCommand(
-                @"UPDATE BillingConfig SET TaxPercentage=@TaxPercent, ConsultationFeeBase=@Fee, UpdatedAt=@UpdatedAt 
-                  WHERE ConfigId=1", connection);
+                @"UPDATE BillingConfig 
+                  SET TaxPercentage=@TaxPercent, ConsultationFeeBase=@Fee, UpdatedAt=@UpdatedAt 
+                  WHERE ConfigId=1",
+                connection);
 
             cmd.Parameters.AddWithValue("@TaxPercent", request.TaxPercentage);
             cmd.Parameters.AddWithValue("@Fee", request.ConsultationFeeBase);
-            cmd.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
+            cmd.Parameters.AddWithValue("@UpdatedAt", DateTime.UtcNow);
 
             cmd.ExecuteNonQuery();
         }

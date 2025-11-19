@@ -13,13 +13,17 @@ function BillGenerator() {
     const [message, setMessage] = useState('');
     const [generatedBill, setGeneratedBill] = useState(null);
 
+    // ✅ FIX: Use environment API base
+    const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5239";
+
     useEffect(() => {
         fetchCompletedAppointments();
     }, []);
 
     const fetchCompletedAppointments = async () => {
         try {
-            const response = await axios.get('http://localhost:5239/api/appointments');
+            // ❗ FIXED: replaced hard-coded URL
+            const response = await axios.get(`${API_BASE}/api/appointments`);
             const completed = response.data.data?.filter(apt => apt.status === 'Completed') || [];
             setAppointments(completed);
         } catch (err) {
@@ -47,6 +51,7 @@ function BillGenerator() {
                 discountPercent,
                 notes
             );
+
             setGeneratedBill(bill);
             setMessage('✅ Bill generated successfully!');
             setAppointmentId('');
@@ -118,7 +123,7 @@ function BillGenerator() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Discount (%) 
+                                Discount (%)
                             </label>
                             <input
                                 type="number"
@@ -154,9 +159,8 @@ function BillGenerator() {
                     </form>
 
                     {message && (
-                        <div className={`mt-6 p-4 rounded-lg text-center font-medium ${
-                            message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
+                        <div className={`mt-6 p-4 rounded-lg text-center font-medium ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>
                             {message}
                         </div>
                     )}

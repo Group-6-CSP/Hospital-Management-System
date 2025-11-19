@@ -181,7 +181,9 @@ function UpdatePatient({ onPatientUpdate }) {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+
+    // ✅ FIXED FOR AZURE — removed localhost completely
+    const API_BASE = process.env.REACT_APP_API_BASE || "";
 
     useEffect(() => {
         fetchPatient();
@@ -238,7 +240,7 @@ function UpdatePatient({ onPatientUpdate }) {
             const response = await axios.put(`${API_BASE}/api/patients/${id}`, formData);
             setMessage('✅ Patient updated successfully!');
             if (onPatientUpdate) onPatientUpdate(response.data);
-            
+
             setTimeout(() => {
                 navigate('/admin/patients');
             }, 2000);
@@ -379,9 +381,10 @@ function UpdatePatient({ onPatientUpdate }) {
                 </form>
 
                 {message && (
-                    <div className={`mt-4 p-4 rounded-lg text-center font-medium text-sm ${
-                        message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                    <div className={`mt-4 p-4 rounded-lg text-center font-medium text-sm ${message.startsWith('✅')
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}>
                         {message}
                     </div>
                 )}

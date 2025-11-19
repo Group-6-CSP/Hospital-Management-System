@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function PatientBookAppointment() {
+    const API_BASE = process.env.REACT_APP_API_BASE || "";
     const navigate = useNavigate();
+
     const [formData, setFormData] = useState({
         departmentId: '',
         doctorId: '',
@@ -27,22 +29,26 @@ function PatientBookAppointment() {
         fetchDepartments();
     }, [userInfo.email, navigate]);
 
+    // ✅ Fetch departments from Azure backend
     const fetchDepartments = async () => {
         try {
-            const response = await axios.get('http://localhost:5239/api/departments');
+            const response = await axios.get(`${API_BASE}/api/departments`);
             setDepartments(response.data);
         } catch (err) {
             console.error('Error fetching departments:', err);
         }
     };
 
+    // ✅ Fetch doctors by department (Azure)
     const handleDepartmentChange = async (e) => {
         const departmentId = e.target.value;
         setFormData({ ...formData, departmentId, doctorId: '' });
 
         if (departmentId) {
             try {
-                const response = await axios.get(`http://localhost:5239/api/doctors/by-department/${departmentId}`);
+                const response = await axios.get(
+                    `${API_BASE}/api/doctors/by-department/${departmentId}`
+                );
                 setFilteredDoctors(response.data);
             } catch (err) {
                 console.error('Error fetching doctors:', err);
@@ -57,6 +63,7 @@ function PatientBookAppointment() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // ✅ Submit appointment using Azure backend
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -74,7 +81,7 @@ function PatientBookAppointment() {
         setMessage('');
 
         try {
-            const response = await axios.post('http://localhost:5239/api/appointments', {
+            const response = await axios.post(`${API_BASE}/api/appointments`, {
                 patientId: patientId,
                 doctorId: formData.doctorId,
                 date: formData.date,
@@ -103,6 +110,7 @@ function PatientBookAppointment() {
                 <p className="text-gray-600 text-center mb-8">Select department and doctor</p>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Department */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Department *</label>
                         <select
@@ -120,6 +128,7 @@ function PatientBookAppointment() {
                         </select>
                     </div>
 
+                    {/* Doctor */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Doctor *</label>
                         <select
@@ -141,6 +150,7 @@ function PatientBookAppointment() {
                         </select>
                     </div>
 
+                    {/* Date & Time */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
@@ -171,6 +181,7 @@ function PatientBookAppointment() {
                         </div>
                     </div>
 
+                    {/* Reason */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Reason for Visit *</label>
                         <textarea
@@ -194,9 +205,8 @@ function PatientBookAppointment() {
                 </form>
 
                 {message && (
-                    <div className={`mt-6 p-4 rounded-lg text-center font-medium ${
-                        message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                    <div className={`mt-6 p-4 rounded-lg text-center font-medium ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
                         {message}
                     </div>
                 )}

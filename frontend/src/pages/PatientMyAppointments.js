@@ -36,10 +36,11 @@ function PatientMyAppointments() {
         try {
             await cancelAppointment(appointmentId);
             setMessage('Appointment cancelled successfully');
-            
-            // Refresh appointments
+
+            // Refresh appointment list
             const data = await getAppointmentHistory(patientId);
             setAppointments(data);
+
         } catch (error) {
             setMessage(error.error || 'Cancellation failed');
         }
@@ -59,9 +60,10 @@ function PatientMyAppointments() {
                 <h1 className="text-3xl font-bold text-blue-600 mb-6">My Appointments</h1>
 
                 {message && (
-                    <div className={`mb-6 p-4 rounded-lg text-center font-medium ${
-                        message.includes('successfully') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                    <div className={`mb-6 p-4 rounded-lg text-center font-medium ${message.includes('successfully')
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}>
                         {message}
                     </div>
                 )}
@@ -69,13 +71,17 @@ function PatientMyAppointments() {
                 {appointments.length > 0 ? (
                     <div className="space-y-4">
                         {appointments.map(apt => (
-                            <div key={apt.appointmentId} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                            <div
+                                key={apt.appointmentId}
+                                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition"
+                            >
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <h3 className="text-xl font-semibold text-gray-800">
                                             {apt.doctorName}
                                         </h3>
                                         <p className="text-sm text-blue-600">{apt.department}</p>
+
                                         <div className="mt-3 space-y-1 text-sm text-gray-600">
                                             <p><span className="font-medium">Date:</span> {apt.date}</p>
                                             <p><span className="font-medium">Time:</span> {apt.time}</p>
@@ -83,15 +89,19 @@ function PatientMyAppointments() {
                                             <p><span className="font-medium">ID:</span> {apt.appointmentId}</p>
                                         </div>
                                     </div>
+
                                     <div className="text-right">
-                                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                                            apt.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                                            apt.status === 'Scheduled' ? 'bg-blue-100 text-blue-700' :
-                                            apt.status === 'Rescheduled' ? 'bg-yellow-100 text-yellow-700' :
-                                            'bg-red-100 text-red-700'
-                                        }`}>
+                                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${apt.status === 'Completed'
+                                                ? 'bg-green-100 text-green-700'
+                                                : apt.status === 'Scheduled'
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : apt.status === 'Rescheduled'
+                                                        ? 'bg-yellow-100 text-yellow-700'
+                                                        : 'bg-red-100 text-red-700'
+                                            }`}>
                                             {apt.status}
                                         </span>
+
                                         {apt.status !== 'Cancelled' && apt.status !== 'Completed' && (
                                             <button
                                                 onClick={() => handleCancel(apt.appointmentId)}

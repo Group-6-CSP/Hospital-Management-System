@@ -14,11 +14,14 @@ function PaymentForm({ billId, totalAmount, onPaymentSuccess }) {
         setMessage('');
 
         try {
-            const response = await recordPayment(billId, amountPaid, paymentMode, transactionRef);
+            await recordPayment(billId, amountPaid, paymentMode, transactionRef);
+
             setMessage('✅ Payment recorded successfully!');
             setAmountPaid('');
             setTransactionRef('');
+
             if (onPaymentSuccess) onPaymentSuccess();
+
         } catch (error) {
             setMessage(`❌ ${error.error}`);
         } finally {
@@ -86,9 +89,8 @@ function PaymentForm({ billId, totalAmount, onPaymentSuccess }) {
             </div>
 
             {message && (
-                <div className={`mt-4 p-4 rounded-lg text-center font-medium ${
-                    message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
+                <div className={`mt-4 p-4 rounded-lg text-center font-medium ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
                     {message}
                 </div>
             )}

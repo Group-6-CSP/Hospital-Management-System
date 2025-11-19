@@ -20,8 +20,11 @@ namespace HospitalManagementSystem.Controllers
         {
             _config = config;
             _authService = new AuthService(config);
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            //  AZURE FIX: Correct environment variable name
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         // Registration API
@@ -75,7 +78,7 @@ namespace HospitalManagementSystem.Controllers
 
                 insertCmd.ExecuteNonQuery();
 
-                // Calculate Age (Years, Months, Days) robustly
+                // Age calculation
                 DateTime today = DateTime.Today;
 
                 int years = today.Year - dob.Year;
@@ -84,7 +87,6 @@ namespace HospitalManagementSystem.Controllers
 
                 if (days < 0)
                 {
-                    // borrow days from previous month
                     int prevMonth, prevMonthYear;
                     if (today.Month == 1)
                     {
@@ -109,7 +111,6 @@ namespace HospitalManagementSystem.Controllers
 
                 if (years < 0)
                 {
-                    // DOB is in the future
                     return BadRequest(new { error = "DOB cannot be in the future" });
                 }
 

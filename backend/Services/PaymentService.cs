@@ -15,8 +15,11 @@ namespace HospitalManagementSystem.Services
         public PaymentService(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            // FIXED for Azure
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -26,12 +29,16 @@ namespace HospitalManagementSystem.Services
 
         private DateTime SafeGetDateTime(MySqlDataReader reader, string columnName)
         {
-            return reader[columnName] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader[columnName]);
+            return reader[columnName] == DBNull.Value
+                ? DateTime.MinValue
+                : Convert.ToDateTime(reader[columnName]);
         }
 
         private decimal SafeGetDecimal(MySqlDataReader reader, string columnName)
         {
-            return reader[columnName] == DBNull.Value ? 0 : Convert.ToDecimal(reader[columnName]);
+            return reader[columnName] == DBNull.Value
+                ? 0
+                : Convert.ToDecimal(reader[columnName]);
         }
 
         // Record payment
@@ -40,10 +47,11 @@ namespace HospitalManagementSystem.Services
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
 
-            // Get bill
+            // Get bill details
             var billCmd = new MySqlCommand("SELECT * FROM Bills WHERE BillId=@BillId", connection);
             billCmd.Parameters.AddWithValue("@BillId", request.BillId);
-            var billReader = billCmd.ExecuteReader();
+
+            using var billReader = billCmd.ExecuteReader();
 
             if (!billReader.Read())
                 throw new Exception("Bill not found");
@@ -53,7 +61,7 @@ namespace HospitalManagementSystem.Services
             decimal totalAmount = SafeGetDecimal(billReader, "TotalAmount");
             string billStatus = SafeGetString(billReader, "Status");
 
-            billReader.Close();
+            // Reader closes automatically
 
             if (request.AmountPaid > totalAmount)
                 throw new Exception("Amount paid cannot exceed bill total");
@@ -61,12 +69,14 @@ namespace HospitalManagementSystem.Services
             if (billStatus == "Paid")
                 throw new Exception("Bill is already paid");
 
-            // Check for duplicate payment (same amount within same bill)
+            // Check duplicate payment
             var dupCmd = new MySqlCommand(
                 "SELECT COUNT(*) FROM Payments WHERE BillId=@BillId AND AmountPaid=@Amount AND Status='Completed'",
                 connection);
+
             dupCmd.Parameters.AddWithValue("@BillId", billId);
             dupCmd.Parameters.AddWithValue("@Amount", request.AmountPaid);
+
             long dupCount = Convert.ToInt64(dupCmd.ExecuteScalar());
 
             if (dupCount > 0)
@@ -75,30 +85,37 @@ namespace HospitalManagementSystem.Services
             // Generate payment ID
             string paymentId = GeneratePaymentId(connection);
 
-            // Insert payment
+            // Insert payment record
             var insertCmd = new MySqlCommand(
-                @"INSERT INTO Payments (PaymentId, BillId, PatientId, AmountPaid, PaymentMode, PaymentDate, Status, TransactionReference, CreatedAt)
-                  VALUES (@PaymentId, @BillId, @PatientId, @Amount, @Mode, @PaymentDate, @Status, @Reference, @CreatedAt)", connection);
+                @"INSERT INTO Payments 
+                    (PaymentId, BillId, PatientId, AmountPaid, PaymentMode, PaymentDate, Status, TransactionReference, CreatedAt)
+                  VALUES 
+                    (@PaymentId, @BillId, @PatientId, @Amount, @Mode, @PaymentDate, @Status, @Reference, @CreatedAt)",
+                connection);
 
             insertCmd.Parameters.AddWithValue("@PaymentId", paymentId);
             insertCmd.Parameters.AddWithValue("@BillId", billId);
             insertCmd.Parameters.AddWithValue("@PatientId", patientId);
             insertCmd.Parameters.AddWithValue("@Amount", request.AmountPaid);
             insertCmd.Parameters.AddWithValue("@Mode", request.PaymentMode);
-            insertCmd.Parameters.AddWithValue("@PaymentDate", DateTime.Now);
+            insertCmd.Parameters.AddWithValue("@PaymentDate", DateTime.UtcNow);
             insertCmd.Parameters.AddWithValue("@Status", "Completed");
             insertCmd.Parameters.AddWithValue("@Reference", request.TransactionReference ?? "");
-            insertCmd.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
+            insertCmd.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
 
             insertCmd.ExecuteNonQuery();
 
             // Update bill status
             string newBillStatus = (request.AmountPaid >= totalAmount) ? "Paid" : "PartiallyPaid";
+
             var updateBillCmd = new MySqlCommand(
-                "UPDATE Bills SET Status=@Status, UpdatedAt=@UpdatedAt WHERE BillId=@BillId", connection);
+                "UPDATE Bills SET Status=@Status, UpdatedAt=@UpdatedAt WHERE BillId=@BillId",
+                connection);
+
             updateBillCmd.Parameters.AddWithValue("@Status", newBillStatus);
-            updateBillCmd.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
+            updateBillCmd.Parameters.AddWithValue("@UpdatedAt", DateTime.UtcNow);
             updateBillCmd.Parameters.AddWithValue("@BillId", billId);
+
             updateBillCmd.ExecuteNonQuery();
 
             return new RecordPaymentResponse
@@ -108,7 +125,7 @@ namespace HospitalManagementSystem.Services
                 PatientId = patientId,
                 AmountPaid = request.AmountPaid,
                 PaymentMode = request.PaymentMode,
-                PaymentDate = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                PaymentDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 Status = "Completed",
                 BillStatus = newBillStatus,
                 Message = "Payment recorded successfully"
@@ -125,10 +142,13 @@ namespace HospitalManagementSystem.Services
                 @"SELECT pm.*, b.TotalAmount FROM Payments pm
                   JOIN Bills b ON pm.BillId = b.BillId
                   WHERE pm.PatientId=@PatientId
-                  ORDER BY pm.PaymentDate DESC", connection);
+                  ORDER BY pm.PaymentDate DESC",
+                connection);
+
             cmd.Parameters.AddWithValue("@PatientId", patientId);
 
-            var reader = cmd.ExecuteReader();
+            using var reader = cmd.ExecuteReader();
+
             var payments = new List<object>();
 
             while (reader.Read())
@@ -155,11 +175,14 @@ namespace HospitalManagementSystem.Services
             connection.Open();
 
             var cmd = new MySqlCommand(
-                @"SELECT pm.*, p.Name as PatientName FROM Payments pm
+                @"SELECT pm.*, p.Name as PatientName 
+                  FROM Payments pm
                   LEFT JOIN Patients p ON pm.PatientId = p.PatientId
-                  ORDER BY pm.PaymentDate DESC", connection);
+                  ORDER BY pm.PaymentDate DESC",
+                connection);
 
-            var reader = cmd.ExecuteReader();
+            using var reader = cmd.ExecuteReader();
+
             var payments = new List<object>();
 
             while (reader.Read())
@@ -181,7 +204,10 @@ namespace HospitalManagementSystem.Services
 
         private string GeneratePaymentId(MySqlConnection connection)
         {
-            var cmd = new MySqlCommand("SELECT PaymentId FROM Payments ORDER BY PaymentId DESC LIMIT 1", connection);
+            var cmd = new MySqlCommand(
+                "SELECT PaymentId FROM Payments ORDER BY PaymentId DESC LIMIT 1",
+                connection);
+
             var result = cmd.ExecuteScalar();
 
             if (result != null)
