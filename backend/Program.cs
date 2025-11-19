@@ -25,7 +25,6 @@ builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<DepartmentService>();
 builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<AuthService>();  // required
-builder.Services.AddScoped<PatientService>(); // if you have this service
 // Add any other service files if needed.
 
 // ======================================================
