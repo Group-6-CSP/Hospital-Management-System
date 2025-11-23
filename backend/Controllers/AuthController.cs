@@ -21,7 +21,7 @@ namespace HospitalManagementSystem.Controllers
             _config = config;
             _authService = new AuthService(config);
 
-            //  AZURE FIX: Correct environment variable name
+            // AZURE FIX: Correct environment variable name
             _connectionString =
                 Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
                 ?? _config.GetConnectionString("DefaultConnection");
@@ -45,7 +45,7 @@ namespace HospitalManagementSystem.Controllers
                 using var connection = new MySqlConnection(_connectionString);
                 connection.Open();
 
-                // Check duplicate email
+                // 1) Check duplicate email
                 var checkCmd = new MySqlCommand("SELECT COUNT(*) FROM Users WHERE Email=@Email", connection);
                 checkCmd.Parameters.AddWithValue("@Email", request.Email);
                 long count = Convert.ToInt64(checkCmd.ExecuteScalar());
@@ -55,16 +55,16 @@ namespace HospitalManagementSystem.Controllers
                     return Conflict(new { error = "Email already exists", code = 409 });
                 }
 
-                // Hash password
+                // 2) Hash password
                 string hashedPassword = _authService.HashPassword(request.Password);
 
-                // Generate UserId
+                // 3) Generate UserId
                 string userId = $"U-{DateTime.Now.Year}-{Guid.NewGuid().ToString().Substring(0, 4)}";
 
-                // Insert into DB
+                // 4) Insert into Users
                 var insertCmd = new MySqlCommand(
-                    "INSERT INTO Users (UserId, FullName, DOB, Email, PasswordHash, Contact, Role, IsActive) " +
-                    "VALUES (@UserId, @FullName, @DOB, @Email, @PasswordHash, @Contact, @Role, @IsActive)",
+                    @"INSERT INTO Users (UserId, FullName, DOB, Email, PasswordHash, Contact, Role, IsActive) 
+                      VALUES (@UserId, @FullName, @DOB, @Email, @PasswordHash, @Contact, @Role, @IsActive)",
                     connection);
 
                 insertCmd.Parameters.AddWithValue("@UserId", userId);
@@ -78,7 +78,7 @@ namespace HospitalManagementSystem.Controllers
 
                 insertCmd.ExecuteNonQuery();
 
-                // Age calculation
+                // 5) Age calculation
                 DateTime today = DateTime.Today;
 
                 int years = today.Year - dob.Year;
@@ -116,6 +116,33 @@ namespace HospitalManagementSystem.Controllers
 
                 string age = $"{years} Years {months} Months {days} Days";
 
+                // 6) If role is Patient -> also insert into Patients table
+                if (string.Equals(request.Role, "Patient", StringComparison.OrdinalIgnoreCase))
+                {
+                    string patientId = GeneratePatientId(connection);
+
+                    var insertPatientCmd = new MySqlCommand(
+                        @"INSERT INTO Patients 
+                          (PatientId, UserId, Name, Email, Dob, Gender, Contact, MedicalNotes, Age) 
+                          VALUES 
+                          (@PatientId, @UserId, @Name, @Email, @Dob, @Gender, @Contact, @MedicalNotes, @Age)",
+                        connection);
+
+                    insertPatientCmd.Parameters.AddWithValue("@PatientId", patientId);
+                    insertPatientCmd.Parameters.AddWithValue("@UserId", userId);
+                    insertPatientCmd.Parameters.AddWithValue("@Name", request.FullName);
+                    insertPatientCmd.Parameters.AddWithValue("@Email", request.Email);
+                    insertPatientCmd.Parameters.AddWithValue("@Dob", dob);
+                    // We don’t have Gender in RegisterRequest -> default to "Other"
+                    insertPatientCmd.Parameters.AddWithValue("@Gender", "Other");
+                    insertPatientCmd.Parameters.AddWithValue("@Contact", request.Contact);
+                    insertPatientCmd.Parameters.AddWithValue("@MedicalNotes", "");
+                    insertPatientCmd.Parameters.AddWithValue("@Age", age);
+
+                    insertPatientCmd.ExecuteNonQuery();
+                }
+
+                // 7) Return response
                 return Ok(new
                 {
                     userId,
@@ -180,6 +207,20 @@ namespace HospitalManagementSystem.Controllers
             {
                 return StatusCode(500, new { error = ex.Message });
             }
+        }
+
+        // Helper: Generate PatientId (P-XXXXXXXX) using same pattern as PatientsController
+        private string GeneratePatientId(MySqlConnection connection)
+        {
+            var cmd = new MySqlCommand(
+                @"SELECT COALESCE(MAX(CAST(SUBSTRING(PatientId, 3) AS UNSIGNED)), 0) + 1 AS NextId 
+                  FROM Patients",
+                connection);
+
+            var result = cmd.ExecuteScalar();
+            int nextNum = Convert.ToInt32(result);
+
+            return "P-" + nextNum.ToString("D8");
         }
     }
 }
