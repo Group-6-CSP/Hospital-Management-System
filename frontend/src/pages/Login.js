@@ -283,7 +283,7 @@ function Login() {
         return response;
     };
 
-    // ✅ Handle form submit
+    //  Handle form submit
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -293,7 +293,7 @@ function Login() {
         }
 
         try {
-            const response = await loginUser(credentials);
+            await loginUser(credentials);
             setMessage("Login successful! Redirecting...");
 
             setTimeout(() => {
@@ -304,7 +304,7 @@ function Login() {
         }
     };
 
-    // ✅ JSX return
+    //  JSX return
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">

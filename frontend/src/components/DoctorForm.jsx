@@ -18,6 +18,7 @@ function DoctorForm({ onSuccess }) {
 
     const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5239";
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchDepartments();
     }, []);

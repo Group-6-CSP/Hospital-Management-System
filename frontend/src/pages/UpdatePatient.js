@@ -182,9 +182,10 @@ function UpdatePatient({ onPatientUpdate }) {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
-    // ✅ FIXED FOR AZURE — removed localhost completely
+    //  FIXED FOR AZURE — removed localhost completely
     const API_BASE = process.env.REACT_APP_API_BASE || "";
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchPatient();
     }, [id]);

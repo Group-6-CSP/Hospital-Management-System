@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getDoctorSchedule, updateDoctorSchedule } from '../services/doctorService';
+//import { getDoctorSchedule, updateDoctorSchedule } from '../services/doctorService';
 import axios from 'axios';
 
 function DoctorSchedule() {
@@ -14,6 +14,7 @@ function DoctorSchedule() {
 
     const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchDoctors();
     }, []);

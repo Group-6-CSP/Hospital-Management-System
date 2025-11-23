@@ -13,9 +13,10 @@ function BillGenerator() {
     const [message, setMessage] = useState('');
     const [generatedBill, setGeneratedBill] = useState(null);
 
-    // ✅ FIX: Use environment API base
+    //  FIX: Use environment API base
     const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5239";
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchCompletedAppointments();
     }, []);

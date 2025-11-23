@@ -10,6 +10,7 @@ function PatientBillingDashboard() {
     const [activeTab, setActiveTab] = useState('bills');
     const patientId = localStorage.getItem('patientId');
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (patientId) {
             fetchBills();

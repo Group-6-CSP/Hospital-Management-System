@@ -3,7 +3,7 @@ import { getBillById, recordPayment } from '../services/billingService';
 
 function BillViewer({ billId }) {
     // Optional: keep API_BASE for future use (not required)
-    const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5239";
+    //const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5239";
 
     const [bill, setBill] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -13,6 +13,7 @@ function BillViewer({ billId }) {
     const [paymentMode, setPaymentMode] = useState('Card');
     const [transactionRef, setTransactionRef] = useState('');
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchBill();
     }, [billId]);

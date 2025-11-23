@@ -104,9 +104,10 @@ function PatientList() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
 
-    // ✔ Correct API base
+    //  Correct API base
     const API_BASE = process.env.REACT_APP_API_BASE || "";
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchPatients();
     }, []);

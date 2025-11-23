@@ -8,18 +8,19 @@ function DoctorAppointmentsList() {
     const [toDate, setToDate] = useState('');
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState('');
+    //const [selectedStatus, setSelectedStatus] = useState('');
 
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
     const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5239";
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchAppointments();
     }, []);
 
     const fetchAppointments = async () => {
         try {
-            const doctorEmail = userInfo.email;
+            //const doctorEmail = userInfo.email;
             const response = await axios.get(`${API_BASE}/api/appointments`);
             const allAppointments = response.data.data || [];
 

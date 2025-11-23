@@ -85,6 +85,7 @@ function PaymentHistory({ patientId }) {
     // Use global API base
     const API_BASE = process.env.REACT_APP_API_BASE;
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (!patientId) {
             setMessage('❌ Patient ID not found');

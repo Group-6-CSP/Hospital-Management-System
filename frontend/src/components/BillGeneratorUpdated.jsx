@@ -19,6 +19,7 @@ function BillGeneratorUpdated() {
     const [message, setMessage] = useState('');
     const [generatedBill, setGeneratedBill] = useState(null);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchCompletedAppointments();
         fetchLabServices();

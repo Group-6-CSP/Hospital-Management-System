@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import BillGenerator from '../components/BillGenerator';
 
 function AdminBillingDashboard() {
-    const [activeTab, setActiveTab] = useState('generate');
+    //const [activeTab, setActiveTab] = useState('generate');
 
     return (
         <div className="min-h-screen bg-gray-100 py-10 px-4">

@@ -21,6 +21,7 @@ function PatientBookAppointment() {
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
     const patientId = localStorage.getItem('patientId');
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (!userInfo.email) {
             navigate('/login?redirect=/patient/book-appointment');
