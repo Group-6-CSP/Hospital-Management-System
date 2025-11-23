@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 //import { getDoctorSchedule, updateDoctorSchedule } from '../services/doctorService';
+import { updateDoctorSchedule } from "../services/doctorService";
 import axios from 'axios';
 
 function DoctorSchedule() {
