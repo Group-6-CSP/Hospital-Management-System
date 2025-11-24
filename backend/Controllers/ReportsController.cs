@@ -36,11 +36,14 @@ namespace HospitalManagementSystem.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
+
+        // GET /api/reports/doctors
         [HttpGet("doctors")]
-        public IActionResult GetDoctorReports([FromQuery] string doctorId = "", 
-                                            [FromQuery] string specialization = "", 
-                                            [FromQuery] string from = "", 
-                                            [FromQuery] string to = "")
+        public IActionResult GetDoctorReports(
+            [FromQuery] string doctorId = "",
+            [FromQuery] string specialization = "",
+            [FromQuery] string from = "",
+            [FromQuery] string to = "")
         {
             try
             {

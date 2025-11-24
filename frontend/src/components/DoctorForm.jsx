@@ -16,13 +16,16 @@ function DoctorForm({ onSuccess }) {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5239";
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchDepartments();
     }, []);
 
     const fetchDepartments = async () => {
         try {
-            const response = await axios.get('http://localhost:5239/api/departments');
+            const response = await axios.get(`${API_BASE}/api/departments`);
             setDepartments(response.data);
         } catch (err) {
             console.error('Error fetching departments:', err);
@@ -59,7 +62,7 @@ function DoctorForm({ onSuccess }) {
         }
 
         try {
-            const response = await axios.post('http://localhost:5239/api/doctors/create-account', {
+            const response = await axios.post(`${API_BASE}/api/doctors/create-account`, {
                 name: formData.name,
                 email: formData.email,
                 password: formData.password,
@@ -69,9 +72,24 @@ function DoctorForm({ onSuccess }) {
                 availability: formData.availability
             });
 
-            setMessage(`✅ Doctor account created successfully!\n\nDoctor ID: ${response.data.doctorId}\nEmail: ${response.data.loginEmail}\nPassword: ${response.data.loginPassword}\n\nShare these credentials with the doctor.`);
-            setFormData({ name: '', email: '', password: '', contact: '', specialization: '', departmentId: '', availability: '' });
-            
+            setMessage(
+                `✅ Doctor account created successfully!\n\n` +
+                `Doctor ID: ${response.data.doctorId}\n` +
+                `Email: ${response.data.loginEmail}\n` +
+                `Password: ${response.data.loginPassword}\n\n` +
+                `Share these credentials with the doctor.`
+            );
+
+            setFormData({
+                name: '',
+                email: '',
+                password: '',
+                contact: '',
+                specialization: '',
+                departmentId: '',
+                availability: ''
+            });
+
             setTimeout(() => {
                 if (onSuccess) onSuccess();
             }, 3000);
@@ -206,9 +224,8 @@ function DoctorForm({ onSuccess }) {
             </form>
 
             {message && (
-                <div className={`mt-6 p-4 rounded-lg whitespace-pre-line font-medium text-sm ${
-                    message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
+                <div className={`mt-6 p-4 rounded-lg whitespace-pre-line font-medium text-sm ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
                     {message}
                 </div>
             )}

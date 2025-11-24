@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getDoctorSchedule, updateDoctorSchedule } from '../services/doctorService';
+//import { getDoctorSchedule, updateDoctorSchedule } from '../services/doctorService';
+import { updateDoctorSchedule } from "../services/doctorService";
 import axios from 'axios';
 
 function DoctorSchedule() {
@@ -10,15 +11,18 @@ function DoctorSchedule() {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const API_BASE = process.env.REACT_APP_API_BASE;
+
     const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchDoctors();
     }, []);
 
     const fetchDoctors = async () => {
         try {
-            const response = await axios.get('http://localhost:5239/api/doctors');
+            const response = await axios.get(`${API_BASE}/api/doctors`);
             setDoctors(response.data);
         } catch (err) {
             console.error('Error fetching doctors:', err);
@@ -115,9 +119,8 @@ function DoctorSchedule() {
             </form>
 
             {message && (
-                <div className={`mt-4 p-4 rounded-lg text-center font-medium ${
-                    message.includes('success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
+                <div className={`mt-4 p-4 rounded-lg text-center font-medium ${message.includes('success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
                     {message}
                 </div>
             )}

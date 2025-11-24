@@ -4,6 +4,10 @@ import { generateBill } from '../services/billingService';
 import { getAllLabServices } from '../services/departmentService';
 
 function BillGeneratorUpdated() {
+
+    //  FIX: Use env variable for Azure deployment
+    const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5239";
+
     const [appointmentId, setAppointmentId] = useState('');
     const [appointments, setAppointments] = useState([]);
     const [labServices, setLabServices] = useState([]);
@@ -15,6 +19,7 @@ function BillGeneratorUpdated() {
     const [message, setMessage] = useState('');
     const [generatedBill, setGeneratedBill] = useState(null);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchCompletedAppointments();
         fetchLabServices();
@@ -22,7 +27,8 @@ function BillGeneratorUpdated() {
 
     const fetchCompletedAppointments = async () => {
         try {
-            const response = await axios.get('http://localhost:5239/api/appointments');
+            //  FIX: replaced localhost with API_BASE
+            const response = await axios.get(`${API_BASE}/api/appointments`);
             const completed = response.data.data?.filter(apt => apt.status === 'Completed') || [];
             setAppointments(completed);
         } catch (err) {
@@ -75,8 +81,10 @@ function BillGeneratorUpdated() {
                 discountPercent,
                 notes
             );
+
             setGeneratedBill(bill);
             setMessage('Bill generated successfully!');
+
         } catch (error) {
             setMessage(`Error: ${error.error || 'Failed to generate bill'}`);
         } finally {
@@ -186,9 +194,8 @@ function BillGeneratorUpdated() {
                     </form>
 
                     {message && (
-                        <div className={`mt-6 p-4 rounded-lg text-center font-medium ${
-                            message.includes('success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
+                        <div className={`mt-6 p-4 rounded-lg text-center font-medium ${message.includes('success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>
                             {message}
                         </div>
                     )}
@@ -198,38 +205,47 @@ function BillGeneratorUpdated() {
                     <div className="bg-white shadow-lg rounded-2xl p-8">
                         <h2 className="text-2xl font-bold text-gray-800 mb-6">Bill Summary</h2>
                         <div className="space-y-3 text-gray-700">
+
                             <div className="flex justify-between border-b pb-2">
                                 <span>Bill ID:</span>
                                 <span className="font-semibold">{generatedBill.billId}</span>
                             </div>
+
                             <div className="flex justify-between border-b pb-2">
                                 <span>Consultation Fee:</span>
                                 <span>Rs {generatedBill.consultationFee.toFixed(2)}</span>
                             </div>
-                                                        <div className="flex justify-between border-b pb-2">
+
+                            <div className="flex justify-between border-b pb-2">
                                 <span>Lab Services:</span>
                                 <span>Rs {generatedBill.labCharges.toFixed(2)}</span>
                             </div>
+
                             <div className="flex justify-between border-b pb-2">
                                 <span>Medicine Charges:</span>
                                 <span>Rs {generatedBill.medicineCharges.toFixed(2)}</span>
                             </div>
+
                             <div className="flex justify-between border-b pb-2 font-semibold">
                                 <span>Subtotal:</span>
                                 <span>Rs {generatedBill.subtotal.toFixed(2)}</span>
                             </div>
+
                             <div className="flex justify-between border-b pb-2 text-red-600">
                                 <span>Discount ({generatedBill.discountPercent}%):</span>
                                 <span>-Rs {generatedBill.discountAmount.toFixed(2)}</span>
                             </div>
+
                             <div className="flex justify-between border-b pb-2">
                                 <span>Tax ({generatedBill.taxPercent}%):</span>
                                 <span>+Rs {generatedBill.taxAmount.toFixed(2)}</span>
                             </div>
+
                             <div className="flex justify-between font-bold text-lg text-blue-600">
                                 <span>Total Amount:</span>
                                 <span>Rs {generatedBill.totalAmount.toFixed(2)}</span>
                             </div>
+
                         </div>
                     </div>
                 )}

@@ -27,7 +27,7 @@
 // //         setIsLoading(true);
 
 // //         // Client-side validation
-// //         if (!formData.fullName || !formData.email || !formData.password || 
+// //         if (!formData.fullName || !formData.email || !formData.password ||
 // //             !formData.contact || !formData.dob || !formData.gender) {
 // //             setMessage("All fields are required");
 // //             setIsLoading(false);
@@ -60,7 +60,7 @@
 
 // //         try {
 // //             console.log("Step 1: Registering user...");
-            
+
 // //             // Step 1: Register user in Users table
 // //             const userResponse = await axios.post('http://localhost:5239/api/auth/register', {
 // //                 fullName: formData.fullName,
@@ -96,13 +96,13 @@
 
 // //         } catch (error) {
 // //             console.error("Registration error:", error);
-            
+
 // //             // Better error handling
 // //             if (error.response) {
 // //                 // Server responded with error
 // //                 const errorMsg = error.response.data?.error || error.response.data?.message || "Registration failed";
 // //                 setMessage(errorMsg);
-                
+
 // //                 // Log detailed error for debugging
 // //                 console.error("Server error:", error.response.data);
 // //             } else if (error.request) {
@@ -300,7 +300,7 @@
 //         setIsLoading(true);
 
 //         // Client-side validation
-//         if (!formData.fullName || !formData.email || !formData.password || 
+//         if (!formData.fullName || !formData.email || !formData.password ||
 //             !formData.contact || !formData.dob || !formData.gender) {
 //             setMessage("All fields are required");
 //             setIsLoading(false);
@@ -545,7 +545,10 @@ import axios from 'axios';
 
 function Register() {
     const navigate = useNavigate();
-    const API_BASE = 'http://localhost:5239'; // Adjust if using env variable
+
+    // ✅ FIXED: Use environment variable (Azure compatible)
+    const API_BASE = process.env.REACT_APP_API_BASE || "";
+
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
@@ -555,6 +558,7 @@ function Register() {
         dob: "",
         gender: ""
     });
+
     const [message, setMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
@@ -569,7 +573,7 @@ function Register() {
         setIsLoading(true);
 
         // Client-side validation
-        if (!formData.fullName || !formData.email || !formData.password || 
+        if (!formData.fullName || !formData.email || !formData.password ||
             !formData.contact || !formData.dob || !formData.gender) {
             setMessage("All fields are required");
             setIsLoading(false);
@@ -620,7 +624,7 @@ function Register() {
                 token: response.data.token
             }));
 
-            // Step 2: Get patient ID from backend
+            // Step 2: Get patient ID
             try {
                 const patientsRes = await axios.get(`${API_BASE}/api/patients`);
                 const patient = patientsRes.data.find(p => p.email === formData.email);
@@ -638,7 +642,11 @@ function Register() {
         } catch (error) {
             console.error("Registration error:", error);
             if (error.response) {
-                const errorMsg = error.response.data?.error || error.response.data?.message || "Registration failed";
+                const errorMsg =
+                    error.response.data?.error ||
+                    error.response.data?.message ||
+                    "Registration failed";
+
                 setMessage(`❌ ${errorMsg}`);
             } else if (error.request) {
                 setMessage("❌ Cannot connect to server. Make sure backend is running.");
@@ -789,9 +797,8 @@ function Register() {
                 </form>
 
                 {message && (
-                    <p className={`mt-4 text-center font-medium ${
-                        message.includes("successful") ? "text-green-600" : "text-red-600"
-                    }`}>
+                    <p className={`mt-4 text-center font-medium ${message.includes("successful") ? "text-green-600" : "text-red-600"
+                        }`}>
                         {message}
                     </p>
                 )}

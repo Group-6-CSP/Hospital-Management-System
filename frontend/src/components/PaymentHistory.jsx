@@ -82,6 +82,10 @@ function PaymentHistory({ patientId }) {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
 
+    // Use global API base
+    const API_BASE = process.env.REACT_APP_API_BASE;
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (!patientId) {
             setMessage('❌ Patient ID not found');
@@ -93,13 +97,12 @@ function PaymentHistory({ patientId }) {
 
     const fetchPayments = async () => {
         try {
-            const response = await axios.get(`http://localhost:5239/api/payments/history/${patientId}`);
+            const response = await axios.get(`${API_BASE}/api/payments/history/${patientId}`);
             setPayments(response.data || []);
             setLoading(false);
         } catch (err) {
             console.error('Error fetching payments:', err);
-            // If no payments found, don't show error - just empty list
-            setPayments([]);
+            setPayments([]); // Empty list instead of error
             setLoading(false);
         }
     };
@@ -134,7 +137,9 @@ function PaymentHistory({ patientId }) {
                                 <tr key={payment.paymentId} className="border-t hover:bg-gray-50">
                                     <td className="px-4 py-2 text-sm">{payment.paymentId}</td>
                                     <td className="px-4 py-2 text-sm">{payment.billId}</td>
-                                    <td className="px-4 py-2 text-sm font-semibold">Rs {payment.amountPaid.toFixed(2)}</td>
+                                    <td className="px-4 py-2 text-sm font-semibold">
+                                        Rs {payment.amountPaid.toFixed(2)}
+                                    </td>
                                     <td className="px-4 py-2 text-sm">{payment.paymentMode}</td>
                                     <td className="px-4 py-2 text-sm">{payment.paymentDate}</td>
                                     <td className="px-4 py-2 text-sm">

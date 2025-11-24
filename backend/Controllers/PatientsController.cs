@@ -340,7 +340,7 @@
 //         @"SELECT COALESCE(MAX(CAST(SUBSTRING(PatientId, 3) AS UNSIGNED)), 0) + 1 AS NextId 
 //           FROM Patients", 
 //         connection);
-    
+
 //     var result = cmd.ExecuteScalar();
 //     int nextNum = Convert.ToInt32(result);
 
@@ -368,19 +368,23 @@ namespace HospitalManagementSystem.Controllers
         public PatientsController(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
-        // Utility: Safe string from reader (always returns string, never null)
         private string SafeGetString(MySqlDataReader reader, string columnName)
         {
-            return reader[columnName] == DBNull.Value ? "" : reader[columnName].ToString()!;
+            return reader[columnName] == DBNull.Value
+                ? ""
+                : reader[columnName].ToString()!;
         }
 
         private DateTime SafeGetDateTime(MySqlDataReader reader, string columnName)
         {
-            return reader[columnName] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader[columnName]);
+            return reader[columnName] == DBNull.Value
+                ? DateTime.MinValue
+                : Convert.ToDateTime(reader[columnName]);
         }
 
         // GET /api/patients
@@ -464,12 +468,11 @@ namespace HospitalManagementSystem.Controllers
                         MedicalNotes = SafeGetString(reader, "MedicalNotes"),
                         Age = SafeGetString(reader, "Age")
                     };
+
                     return Ok(patient);
                 }
-                else
-                {
-                    return NotFound(new { error = "Patient not found" });
-                }
+
+                return NotFound(new { error = "Patient not found" });
             }
             catch (Exception ex)
             {
@@ -478,9 +481,6 @@ namespace HospitalManagementSystem.Controllers
         }
 
         // POST /api/patients
-        // ================================================================
-        // FIXED: Now properly handles UserId - can be NULL (optional)
-        // ================================================================
         [HttpPost]
         public IActionResult RegisterPatient([FromBody] Patient request)
         {
@@ -489,11 +489,10 @@ namespace HospitalManagementSystem.Controllers
                 if (request == null)
                     return BadRequest(new { error = "Invalid request" });
 
-                // ====== STEP 1: VALIDATE REQUIRED FIELDS ======
                 if (string.IsNullOrWhiteSpace(request.Name))
                     return BadRequest(new { error = "Name is required" });
 
-                if (request.Dob == default || request.Dob == DateTime.MinValue)
+                if (request.Dob == default)
                     return BadRequest(new { error = "Date of birth is required" });
 
                 if (string.IsNullOrWhiteSpace(request.Gender))
@@ -508,15 +507,12 @@ namespace HospitalManagementSystem.Controllers
                 if (request.Contact.Length < 10)
                     return BadRequest(new { error = "Invalid contact number" });
 
-                // ====== STEP 2: CALCULATE AGE AND GENERATE ID ======
                 string age = CalculateAge(request.Dob);
                 string patientId = GeneratePatientId();
 
-                // ====== STEP 3: OPEN DATABASE CONNECTION ======
                 using var connection = new MySqlConnection(_connectionString);
                 connection.Open();
 
-                // ====== STEP 4: VALIDATE UserId IF PROVIDED (OPTIONAL) ======
                 if (!string.IsNullOrWhiteSpace(request.UserId))
                 {
                     var userCheckCmd = new MySqlCommand(
@@ -525,10 +521,9 @@ namespace HospitalManagementSystem.Controllers
                     long userExists = Convert.ToInt64(userCheckCmd.ExecuteScalar());
 
                     if (userExists == 0)
-                        return NotFound(new { error = "User with ID '" + request.UserId + "' does not exist in Users table" });
+                        return NotFound(new { error = $"User '{request.UserId}' does not exist" });
                 }
 
-                // ====== STEP 5: CHECK FOR DUPLICATE CONTACT ======
                 var checkCmd = new MySqlCommand(
                     "SELECT COUNT(*) FROM Patients WHERE Contact=@Contact", connection);
                 checkCmd.Parameters.AddWithValue("@Contact", request.Contact);
@@ -537,20 +532,15 @@ namespace HospitalManagementSystem.Controllers
                 if (count > 0)
                     return Conflict(new { error = "Contact already exists", code = 409 });
 
-                // ====== STEP 6: CREATE INSERT COMMAND ======
                 var insertCmd = new MySqlCommand(
                     @"INSERT INTO Patients (PatientId, UserId, Name, Email, Dob, Gender, Contact, MedicalNotes, Age) 
                       VALUES (@PatientId, @UserId, @Name, @Email, @Dob, @Gender, @Contact, @MedicalNotes, @Age)",
                     connection);
 
-                // ====== STEP 7: ADD PARAMETERS TO COMMAND ======
                 insertCmd.Parameters.AddWithValue("@PatientId", patientId);
-                
-                // Handle NULL UserId properly - this is optional
-                if (string.IsNullOrWhiteSpace(request.UserId))
-                    insertCmd.Parameters.AddWithValue("@UserId", DBNull.Value);
-                else
-                    insertCmd.Parameters.AddWithValue("@UserId", request.UserId);
+
+                insertCmd.Parameters.AddWithValue("@UserId",
+                    string.IsNullOrWhiteSpace(request.UserId) ? DBNull.Value : request.UserId);
 
                 insertCmd.Parameters.AddWithValue("@Name", request.Name);
                 insertCmd.Parameters.AddWithValue("@Email", request.Email ?? "");
@@ -560,22 +550,20 @@ namespace HospitalManagementSystem.Controllers
                 insertCmd.Parameters.AddWithValue("@MedicalNotes", request.MedicalNotes ?? "");
                 insertCmd.Parameters.AddWithValue("@Age", age);
 
-                // ====== STEP 8: EXECUTE COMMAND ======
                 insertCmd.ExecuteNonQuery();
 
-                // ====== STEP 9: RETURN SUCCESS ======
                 return Ok(new
                 {
                     patientId,
                     message = "Patient registered successfully",
-                    age = age
+                    age
                 });
             }
             catch (MySqlException sqlEx)
             {
                 if (sqlEx.Message.Contains("foreign key constraint"))
-                    return BadRequest(new { error = "Invalid UserId: The user does not exist. Please check the UserId or register a new user first." });
-                
+                    return BadRequest(new { error = "Invalid UserId (no matching user found)" });
+
                 return StatusCode(500, new { error = $"Database error: {sqlEx.Message}" });
             }
             catch (Exception ex)
@@ -611,14 +599,13 @@ namespace HospitalManagementSystem.Controllers
                 reader.Close();
 
                 if (!string.IsNullOrWhiteSpace(request.UserId) && request.UserId != currentUserId)
-                {
                     return BadRequest(new { error = "UserId cannot be changed." });
-                }
 
                 if (request.Contact != currentContact)
                 {
                     var checkContactCmd = new MySqlCommand(
-                        "SELECT COUNT(*) FROM Patients WHERE Contact=@Contact AND PatientId<>@PatientId", connection);
+                        "SELECT COUNT(*) FROM Patients WHERE Contact=@Contact AND PatientId<>@PatientId",
+                        connection);
                     checkContactCmd.Parameters.AddWithValue("@Contact", request.Contact);
                     checkContactCmd.Parameters.AddWithValue("@PatientId", id);
                     long contactCount = Convert.ToInt64(checkContactCmd.ExecuteScalar());
@@ -627,7 +614,7 @@ namespace HospitalManagementSystem.Controllers
                         return Conflict(new { error = "Contact already exists", code = 409 });
                 }
 
-                string updatedAge = (request.Dob != currentDob)
+                string updatedAge = request.Dob != currentDob
                     ? CalculateAge(request.Dob)
                     : currentAge;
 
@@ -658,7 +645,6 @@ namespace HospitalManagementSystem.Controllers
             }
         }
 
-        // DELETE /api/patients/{id}
         [HttpDelete("{id}")]
         public IActionResult DeletePatient(string id)
         {
@@ -667,14 +653,16 @@ namespace HospitalManagementSystem.Controllers
                 using var connection = new MySqlConnection(_connectionString);
                 connection.Open();
 
-                var checkCmd = new MySqlCommand("SELECT COUNT(*) FROM Patients WHERE PatientId=@PatientId", connection);
+                var checkCmd = new MySqlCommand(
+                    "SELECT COUNT(*) FROM Patients WHERE PatientId=@PatientId", connection);
                 checkCmd.Parameters.AddWithValue("@PatientId", id);
                 long count = Convert.ToInt64(checkCmd.ExecuteScalar());
 
                 if (count == 0)
                     return NotFound(new { error = "Patient not found" });
 
-                var deleteCmd = new MySqlCommand("DELETE FROM Patients WHERE PatientId=@PatientId", connection);
+                var deleteCmd = new MySqlCommand(
+                    "DELETE FROM Patients WHERE PatientId=@PatientId", connection);
                 deleteCmd.Parameters.AddWithValue("@PatientId", id);
 
                 int rowsAffected = deleteCmd.ExecuteNonQuery();
@@ -690,7 +678,6 @@ namespace HospitalManagementSystem.Controllers
             }
         }
 
-        // Utility: Age Calculation
         private string CalculateAge(DateTime dob)
         {
             DateTime today = DateTime.Today;
@@ -714,15 +701,9 @@ namespace HospitalManagementSystem.Controllers
                 years--;
             }
 
-            if (years < 0)
-            {
-                throw new ArgumentException("DOB cannot be in the future");
-            }
-
             return $"{years} Years {months} Months {days} Days";
         }
 
-        // Utility: Generate PatientId (P-XXXXXXXX)
         private string GeneratePatientId()
         {
             using var connection = new MySqlConnection(_connectionString);
@@ -730,11 +711,10 @@ namespace HospitalManagementSystem.Controllers
 
             var cmd = new MySqlCommand(
                 @"SELECT COALESCE(MAX(CAST(SUBSTRING(PatientId, 3) AS UNSIGNED)), 0) + 1 AS NextId 
-                  FROM Patients", 
+                  FROM Patients",
                 connection);
-            
-            var result = cmd.ExecuteScalar();
-            int nextNum = Convert.ToInt32(result);
+
+            int nextNum = Convert.ToInt32(cmd.ExecuteScalar());
 
             return "P-" + nextNum.ToString("D8");
         }

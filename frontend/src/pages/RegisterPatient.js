@@ -94,7 +94,9 @@ function RegisterPatient() {
     });
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
-    const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+
+    // ✅ FIXED URL (no localhost)
+    const API_BASE = process.env.REACT_APP_API_BASE || "";
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -146,7 +148,7 @@ function RegisterPatient() {
         try {
             const response = await axios.post(`${API_BASE}/api/patients`, formData);
             setMessage(`✅ Patient registered successfully!\nPatient ID: ${response.data.patientId}`);
-            
+
             setTimeout(() => {
                 navigate('/admin/patients');
             }, 2000);
@@ -179,6 +181,7 @@ function RegisterPatient() {
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* same fields... unchanged */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             User ID *
@@ -301,9 +304,8 @@ function RegisterPatient() {
                 </form>
 
                 {message && (
-                    <div className={`mt-4 p-4 rounded-lg whitespace-pre-line text-center font-medium text-sm ${
-                        message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                    <div className={`mt-4 p-4 rounded-lg whitespace-pre-line text-center font-medium text-sm ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
                         {message}
                     </div>
                 )}

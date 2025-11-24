@@ -2,7 +2,10 @@ import axios from 'axios';
 
 // Prefer env-configured base URL when present (set by runner during E2E),
 // otherwise fall back to CRA proxy or relative path.
-const API_BASE = process.env.REACT_APP_API_BASE || '';
+const API_BASE =
+    process.env.REACT_APP_API_BASE ||
+    "https://hospital-backend-app-d5hzfjfqfbakbdcu.southeastasia-01.azurewebsites.net";
+
 const API_URL = `${API_BASE}/api/appointments`;
 
 export const bookAppointment = async (appointmentData) => {
@@ -39,7 +42,7 @@ export const getStatistics = async (from, to) => {
         const params = {};
         if (from) params.from = from;
         if (to) params.to = to;
-        
+
         const response = await axios.get(`${API_URL}/statistics`, { params });
         return response.data;
     } catch (error) {

@@ -83,8 +83,11 @@ namespace HospitalManagementSystem.Controllers
         {
             _config = config;
             _doctorService = new DoctorService(config);
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            //  Azure uses ConnectionStrings__DefaultConnection
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -248,6 +251,8 @@ namespace HospitalManagementSystem.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
+        // POST /api/doctors/create-account
         [HttpPost("create-account")]
         public IActionResult CreateDoctorAccount([FromBody] CreateDoctorRequest request)
         {
@@ -276,6 +281,7 @@ namespace HospitalManagementSystem.Controllers
             }
         }
 
+        // GET /api/doctors/by-department/{departmentId}
         [HttpGet("by-department/{departmentId}")]
         public IActionResult GetDoctorsByDepartment(string departmentId)
         {

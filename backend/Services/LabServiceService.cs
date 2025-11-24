@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using MySql.Data.MySqlClient;
@@ -14,8 +15,11 @@ namespace HospitalManagementSystem.Services
         public LabServiceService(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            // FIXED for Azure connection string handling
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -34,8 +38,12 @@ namespace HospitalManagementSystem.Services
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
 
-            var cmd = new MySqlCommand("SELECT * FROM LabServices WHERE IsActive=1 ORDER BY ServiceName ASC", connection);
-            var reader = cmd.ExecuteReader();
+            var cmd = new MySqlCommand(
+                "SELECT * FROM LabServices WHERE IsActive=1 ORDER BY ServiceName ASC",
+                connection);
+
+            using var reader = cmd.ExecuteReader();
+
             var services = new List<GetLabServicesResponse>();
 
             while (reader.Read())
@@ -58,7 +66,10 @@ namespace HospitalManagementSystem.Services
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
 
-            var cmd = new MySqlCommand("SELECT Price FROM LabServices WHERE LabServiceId=@LabServiceId", connection);
+            var cmd = new MySqlCommand(
+                "SELECT Price FROM LabServices WHERE LabServiceId=@LabServiceId",
+                connection);
+
             cmd.Parameters.AddWithValue("@LabServiceId", labServiceId);
 
             var result = cmd.ExecuteScalar();

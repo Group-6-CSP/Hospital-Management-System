@@ -1,131 +1,116 @@
-// using MySql.Data.MySqlClient;
-// using HospitalManagementSystem.Services;
-
-// var builder = WebApplication.CreateBuilder(args);
-// builder.Configuration.AddEnvironmentVariables();
-// // Add services
-// builder.Services.AddControllers();
-// builder.Services.AddEndpointsApiExplorer();
-// builder.Services.AddSwaggerGen();
-
-// // CORS for React frontend
-// var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-//     ?? new[] { "http://localhost:3000", "http://localhost:3001" };
-
-// builder.Services.AddCors(options =>
-// {
-//     options.AddPolicy("AllowFrontend",
-//         policy =>
-//         {
-//             policy.WithOrigins(allowedOrigins)
-//                   .AllowAnyHeader()
-//                   .AllowAnyMethod();
-//         });
-// });
-
-// var app = builder.Build();
-
-// // Middleware
-// // Enable Swagger UI in all environments for test readiness checks
-// app.UseSwagger();
-// app.UseSwaggerUI();
-
-// // Only redirect to HTTPS when an HTTPS port is configured or in Production
-// var httpsPort = builder.Configuration["ASPNETCORE_HTTPS_PORT"];
-// if (!string.IsNullOrEmpty(httpsPort) || app.Environment.IsProduction())
-// {
-//     app.UseHttpsRedirection();
-// }
-// app.UseRouting();
-// app.UseCors("AllowFrontend");
-// app.UseAuthorization();
-// app.MapControllers();
-
-// // Development-only: ensure seeded test users have expected password hash (Test@123)
-// if (app.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("ResetSeedPasswordsOnStart", true))
-// {
-//     try
-//     {
-//         var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
-//         if (!string.IsNullOrEmpty(connStr))
-//         {
-//             var authSvc = new AuthService(builder.Configuration);
-//             var hash = authSvc.HashPassword("Test@123");
-//             using var conn = new MySqlConnection(connStr);
-//             conn.Open();
-//             var sql = @"UPDATE Users SET PasswordHash=@hash, IsActive=1 WHERE Email IN ('testuser@example.com','testuser2@example.com')";
-//             using var cmd = new MySqlCommand(sql, conn);
-//             cmd.Parameters.AddWithValue("@hash", hash);
-//             cmd.ExecuteNonQuery();
-//         }
-//     }
-//     catch { /* ignore in development */ }
-
-// }
-// app.Run();
 using MySql.Data.MySqlClient;
 using HospitalManagementSystem.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ======================================================
-// ✅ Configuration
+// Load environment variables (Azure connection strings, JWT, etc.)
 // ======================================================
 builder.Configuration.AddEnvironmentVariables();
 
 // ======================================================
-// ✅ Add services
+// Register Application Services (Dependency Injection)
+// ======================================================
+builder.Services.AddScoped<AdminDoctorService>();
+builder.Services.AddScoped<DoctorService>();
+builder.Services.AddScoped<DoctorManagementService>();
+builder.Services.AddScoped<DoctorReportService>();
+builder.Services.AddScoped<AppointmentManagementService>();
+builder.Services.AddScoped<LabServiceService>();
+builder.Services.AddScoped<BillingService>();
+builder.Services.AddScoped<PaymentService>();
+builder.Services.AddScoped<DepartmentService>();
+builder.Services.AddScoped<ReportService>();
+builder.Services.AddScoped<AuthService>();  // required
+// Add any other service files if needed.
+
+// ======================================================
+// Add controllers & swagger
 // ======================================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // ======================================================
-// ✅ CORS configuration for React frontend
+// JWT Authentication
 // ======================================================
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? new[] { "http://localhost:3000", "http://localhost:3001" };
+var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
 
+if (!string.IsNullOrEmpty(jwtKey))
+{
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+}
+
+// ======================================================
+// CORS (Azure-friendly)
+// ======================================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .SetIsOriginAllowed(origin => true);  // Wide-open for Azure
     });
 });
 
+// ======================================================
+// Build the app
+// ======================================================
 var app = builder.Build();
 
 // ======================================================
-// ✅ Middleware
+// Middleware pipeline
 // ======================================================
 
-// Swagger
+// Swagger always ON (helpful in Azure)
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// Optional HTTPS redirection
-var httpsPort = builder.Configuration["ASPNETCORE_HTTPS_PORT"];
-if (!string.IsNullOrEmpty(httpsPort) || app.Environment.IsProduction())
+if (app.Environment.IsProduction())
 {
     app.UseHttpsRedirection();
 }
 
-// ✅ Use CORS before routing
 app.UseCors("AllowFrontend");
 
-app.UseRouting();
+// Authentication FIRST → Authorization SECOND
+app.UseAuthentication();
 app.UseAuthorization();
 
-// Map controllers
 app.MapControllers();
 
 // ======================================================
-// ✅ Development-only: Reset seed passwords
+// Dev-only password reset (SAFE - does not run in production)
 // ======================================================
-if (app.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("ResetSeedPasswordsOnStart", true))
+if (app.Environment.IsDevelopment() &&
+    builder.Configuration.GetValue<bool>("ResetSeedPasswordsOnStart", true))
 {
     try
     {
@@ -148,11 +133,11 @@ if (app.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("Res
     }
     catch
     {
-        // ignore errors in development
+        // Ignore dev errors
     }
 }
 
 // ======================================================
-// ✅ Run the application
+// Run application
 // ======================================================
 app.Run();

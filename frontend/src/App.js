@@ -122,14 +122,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import AdminDashboard from './pages/AdminDashboard';
+//import AdminDashboard from './pages/AdminDashboard';
 import RegisterPatient from './pages/RegisterPatient';
 import PatientList from './pages/PatientList';
 import UpdatePatient from './pages/UpdatePatient';
 import AppointmentList from './pages/AppointmentList';
 import AppointmentHistory from './pages/AppointmentHistory';
 import AppointmentStats from './pages/AppointmentStats';
-import PatientDashboard from './pages/PatientDashboard';
+//import PatientDashboard from './pages/PatientDashboard';
 import PatientBookAppointment from './pages/PatientBookAppointment';
 import PatientMyAppointments from './pages/PatientMyAppointments';
 import PatientProfile from './pages/PatientProfile';

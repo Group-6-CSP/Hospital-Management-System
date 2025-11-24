@@ -17,6 +17,9 @@ namespace HospitalManagementSystem.Controllers
         public BillingController(IConfiguration config)
         {
             _config = config;
+
+            //  Azure-ready: BillingService will internally use
+            // Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
             _billingService = new BillingService(config);
         }
 

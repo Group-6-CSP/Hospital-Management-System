@@ -134,17 +134,17 @@ function PatientDashboard() {
     const [message, setMessage] = useState('');
 
     const patientId = localStorage.getItem('patientId');
-    const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+    const API_BASE = process.env.REACT_APP_API_BASE || "";
 
     useEffect(() => {
         const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-        
+
         if (!userInfo.email || userInfo.role !== 'Patient') {
             navigate('/login');
             return;
         }
 
-        // Fetch patient details if patientId exists
+        // Fetch patient details
         if (patientId) {
             axios.get(`${API_BASE}/api/patients/${patientId}`)
                 .then(res => {

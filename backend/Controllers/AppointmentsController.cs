@@ -546,8 +546,9 @@ namespace HospitalManagementSystem.Controllers
         public AppointmentsController(IConfiguration config)
         {
             _config = config;
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         // Utility methods
@@ -562,8 +563,7 @@ namespace HospitalManagementSystem.Controllers
         }
 
         // =====================================================
-        // FIXED: GET /api/appointments - Get all appointments (for admin)
-        // Now properly joins with Departments table
+        // GET /api/appointments - Get all appointments (Admin)
         // =====================================================
         [HttpGet]
         public IActionResult GetAllAppointments()
@@ -619,8 +619,10 @@ namespace HospitalManagementSystem.Controllers
             }
         }
 
+        // =====================================================
         // USER STORY 1: Book Appointment
         // POST /api/appointments
+        // =====================================================
         [HttpPost]
         public IActionResult BookAppointment([FromBody] BookAppointmentRequest request)
         {
@@ -711,9 +713,8 @@ namespace HospitalManagementSystem.Controllers
         }
 
         // =====================================================
-        // FIXED: USER STORY 2: View Appointment History
+        // USER STORY 2: View Appointment History
         // GET /api/appointments/history/{patientId}
-        // Now properly joins with Departments table
         // =====================================================
         [HttpGet("history/{patientId}")]
         public IActionResult GetAppointmentHistory(string patientId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
@@ -752,7 +753,8 @@ namespace HospitalManagementSystem.Controllers
                       WHERE a.PatientId=@PatientId
                       ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC
                       LIMIT @Limit OFFSET @Offset",
-                    connection);
+                    connection
+                );
 
                 cmd.Parameters.AddWithValue("@PatientId", patientId);
                 cmd.Parameters.AddWithValue("@Limit", pageSize);
@@ -783,8 +785,9 @@ namespace HospitalManagementSystem.Controllers
             }
         }
 
+        // =====================================================
         // USER STORY 3: Reschedule Appointment
-        // PUT /api/appointments/{appointmentId}/reschedule
+        // =====================================================
         [HttpPut("{appointmentId}/reschedule")]
         public IActionResult RescheduleAppointment(string appointmentId, [FromBody] RescheduleAppointmentRequest request)
         {
@@ -823,7 +826,8 @@ namespace HospitalManagementSystem.Controllers
 
                 var checkSlot = new MySqlCommand(
                     "SELECT COUNT(*) FROM Appointments WHERE DoctorId=@DoctorId AND AppointmentDate=@Date AND AppointmentTime=@Time AND Status NOT IN ('Cancelled') AND AppointmentId<>@AppointmentId",
-                    connection);
+                    connection
+                );
                 checkSlot.Parameters.AddWithValue("@DoctorId", doctorId);
                 checkSlot.Parameters.AddWithValue("@Date", newDate);
                 checkSlot.Parameters.AddWithValue("@Time", request.NewTime);
@@ -835,7 +839,8 @@ namespace HospitalManagementSystem.Controllers
 
                 var updateCmd = new MySqlCommand(
                     "UPDATE Appointments SET AppointmentDate=@NewDate, AppointmentTime=@NewTime, Status=@Status, UpdatedAt=@UpdatedAt WHERE AppointmentId=@AppointmentId",
-                    connection);
+                    connection
+                );
 
                 updateCmd.Parameters.AddWithValue("@NewDate", newDate);
                 updateCmd.Parameters.AddWithValue("@NewTime", request.NewTime);
@@ -860,7 +865,9 @@ namespace HospitalManagementSystem.Controllers
             }
         }
 
+        // =====================================================
         // DELETE /api/appointments/{appointmentId} - Cancel appointment
+        // =====================================================
         [HttpDelete("{appointmentId}")]
         public IActionResult CancelAppointment(string appointmentId)
         {
@@ -870,8 +877,9 @@ namespace HospitalManagementSystem.Controllers
                 connection.Open();
 
                 var getCmd = new MySqlCommand(
-                    "SELECT Status FROM Appointments WHERE AppointmentId=@AppointmentId", 
-                    connection);
+                    "SELECT Status FROM Appointments WHERE AppointmentId=@AppointmentId",
+                    connection
+                );
                 getCmd.Parameters.AddWithValue("@AppointmentId", appointmentId);
                 var result = getCmd.ExecuteScalar();
 
@@ -888,7 +896,8 @@ namespace HospitalManagementSystem.Controllers
 
                 var updateCmd = new MySqlCommand(
                     "UPDATE Appointments SET Status=@Status, UpdatedAt=@UpdatedAt WHERE AppointmentId=@AppointmentId",
-                    connection);
+                    connection
+                );
 
                 updateCmd.Parameters.AddWithValue("@Status", "Cancelled");
                 updateCmd.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
@@ -907,8 +916,9 @@ namespace HospitalManagementSystem.Controllers
             }
         }
 
-        // USER STORY 4: Generate Statistics
+        // =====================================================
         // GET /api/appointments/statistics
+        // =====================================================
         [HttpGet("statistics")]
         public IActionResult GetStatistics([FromQuery] string? from, [FromQuery] string? to)
         {
@@ -962,7 +972,8 @@ namespace HospitalManagementSystem.Controllers
                        {whereClause}
                        GROUP BY d.Name
                        ORDER BY Count DESC",
-                    connection);
+                    connection
+                );
 
                 if (!string.IsNullOrWhiteSpace(from))
                     doctorCmd.Parameters.AddWithValue("@FromDate", fromDate);
@@ -985,7 +996,8 @@ namespace HospitalManagementSystem.Controllers
                        {whereClause}
                        GROUP BY d.Department
                        ORDER BY Count DESC",
-                    connection);
+                    connection
+                );
 
                 if (!string.IsNullOrWhiteSpace(from))
                     deptCmd.Parameters.AddWithValue("@FromDate", fromDate);
@@ -1013,7 +1025,9 @@ namespace HospitalManagementSystem.Controllers
             }
         }
 
+        // =====================================================
         // Utility: Generate Appointment ID
+        // =====================================================
         private string GenerateAppointmentId(MySqlConnection connection)
         {
             var cmd = new MySqlCommand("SELECT AppointmentId FROM Appointments ORDER BY AppointmentId DESC LIMIT 1", connection);
@@ -1031,6 +1045,9 @@ namespace HospitalManagementSystem.Controllers
             }
         }
 
+        // =====================================================
+        // GET doctor-specific appointments
+        // =====================================================
         [HttpGet("doctor/{doctorId}")]
         public IActionResult GetDoctorAppointments(string doctorId, [FromQuery] string from = "", [FromQuery] string to = "")
         {
@@ -1050,6 +1067,9 @@ namespace HospitalManagementSystem.Controllers
             }
         }
 
+        // =====================================================
+        // PUT /api/appointments/{appointmentId}/status
+        // =====================================================
         [HttpPut("{appointmentId}/status")]
         public IActionResult UpdateAppointmentStatus(string appointmentId, [FromBody] UpdateAppointmentStatusRequest request)
         {

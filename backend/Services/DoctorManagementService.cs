@@ -18,8 +18,11 @@ namespace HospitalManagementSystem.Services
         {
             _config = config;
             _authService = new AuthService(config);
-            _connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                                ?? _config.GetConnectionString("DefaultConnection");
+
+            // FIXED for Azure connection string handling
+            _connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? _config.GetConnectionString("DefaultConnection");
         }
 
         private string SafeGetString(MySqlDataReader reader, string columnName)
@@ -30,7 +33,8 @@ namespace HospitalManagementSystem.Services
         // Create Doctor Account
         public string CreateDoctorAccount(CreateDoctorRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Name) || !System.Text.RegularExpressions.Regex.IsMatch(request.Name, @"^[a-zA-Z\s]+$"))
+            if (string.IsNullOrWhiteSpace(request.Name) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(request.Name, @"^[a-zA-Z\s]+$"))
                 throw new Exception("Name must contain only alphabets");
 
             if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains("@"))
@@ -77,7 +81,7 @@ namespace HospitalManagementSystem.Services
             userInsertCmd.Parameters.AddWithValue("@Contact", request.Contact);
             userInsertCmd.Parameters.AddWithValue("@Role", "Doctor");
             userInsertCmd.Parameters.AddWithValue("@IsActive", true);
-            userInsertCmd.Parameters.AddWithValue("@DOB", DateTime.Now);
+            userInsertCmd.Parameters.AddWithValue("@DOB", DateTime.UtcNow);
 
             userInsertCmd.ExecuteNonQuery();
 
@@ -98,7 +102,7 @@ namespace HospitalManagementSystem.Services
             doctorInsertCmd.Parameters.AddWithValue("@Email", request.Email);
             doctorInsertCmd.Parameters.AddWithValue("@Availability", request.Availability ?? "");
             doctorInsertCmd.Parameters.AddWithValue("@IsActive", true);
-            doctorInsertCmd.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
+            doctorInsertCmd.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
 
             doctorInsertCmd.ExecuteNonQuery();
 
@@ -119,7 +123,8 @@ namespace HospitalManagementSystem.Services
                 connection);
 
             cmd.Parameters.AddWithValue("@DepartmentId", departmentId);
-            var reader = cmd.ExecuteReader();
+
+            using var reader = cmd.ExecuteReader();
             var doctors = new List<object>();
 
             while (reader.Read())

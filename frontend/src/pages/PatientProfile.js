@@ -172,7 +172,9 @@ function PatientProfile() {
 
     const patientId = localStorage.getItem('patientId');
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+
+    //  Use environment variable only
+    const API_BASE = process.env.REACT_APP_API_BASE || "";
 
     useEffect(() => {
         if (!userInfo.email || userInfo.role !== 'Patient') {
@@ -186,13 +188,13 @@ function PatientProfile() {
             return;
         }
 
-        // Fetch patient details
-        axios.get(`${API_BASE}/api/patients/${patientId}`)
-            .then(res => {
+        axios
+            .get(`${API_BASE}/api/patients/${patientId}`)
+            .then((res) => {
                 setPatient(res.data);
                 setLoading(false);
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error('Error fetching patient:', err);
                 setMessage('Failed to load profile');
                 setLoading(false);
@@ -224,36 +226,46 @@ function PatientProfile() {
 
                 {patient && (
                     <div className="space-y-8">
-                        {/* Personal Information */}
+                        {/* Personal Info */}
                         <div className="border-b pb-6">
                             <h2 className="text-xl font-semibold text-gray-800 mb-4">
                                 Personal Information
                             </h2>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Patient ID</p>
                                     <p className="mt-2 text-gray-900 font-medium">{patient.patientId}</p>
                                 </div>
+
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Full Name</p>
                                     <p className="mt-2 text-gray-900 font-medium">{patient.name}</p>
                                 </div>
+
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Email</p>
                                     <p className="mt-2 text-gray-900">{patient.email || 'Not provided'}</p>
                                 </div>
+
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Contact Number</p>
                                     <p className="mt-2 text-gray-900">{patient.contact}</p>
                                 </div>
+
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Date of Birth</p>
-                                    <p className="mt-2 text-gray-900">{patient.dob?.substring(0, 10) || 'N/A'}</p>
+                                    <p className="mt-2 text-gray-900">
+                                        {patient.dob?.substring(0, 10) || 'N/A'}
+                                    </p>
                                 </div>
+
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Age</p>
                                     <p className="mt-2 text-gray-900">{patient.age || 'N/A'}</p>
                                 </div>
+
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Gender</p>
                                     <p className="mt-2 text-gray-900">{patient.gender || 'N/A'}</p>
@@ -263,22 +275,21 @@ function PatientProfile() {
 
                         {/* Medical Notes */}
                         <div className="border-b pb-6">
-                            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                                Medical Notes
-                            </h2>
+                            <h2 className="text-xl font-semibold text-gray-800 mb-4">Medical Notes</h2>
                             <p className="text-gray-700 whitespace-pre-wrap">
                                 {patient.medicalNotes || 'No medical notes available'}
                             </p>
                         </div>
 
-                        {/* Quick Actions */}
+                        {/* Buttons */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <button
                                 onClick={() => navigate('/patient/book-appointment')}
                                 className="py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                             >
-                                Book New Appointment
+                                Book Appointment
                             </button>
+
                             <button
                                 onClick={() => navigate('/patient/my-appointments')}
                                 className="py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
